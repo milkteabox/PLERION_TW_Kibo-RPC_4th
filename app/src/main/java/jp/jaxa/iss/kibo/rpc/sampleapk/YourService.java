@@ -9,13 +9,13 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import gov.nasa.arc.astrobee.Result;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
-import jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.Node;
 import jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch;
 
 import static jp.jaxa.iss.kibo.rpc.sampleapk.Constants.*;
@@ -29,11 +29,15 @@ public class YourService extends KiboRpcService {
     @Override
     protected void runPlan1(){
         api.startMission();
-        Log.i("PathSearch", "TEST");
-        List<Node> path = PathSearch.PathSearch(point4, pointQR);
-        path.get(0);
+        Log.i("LOCATE", api.getRobotKinematics().getPosition().toString());
+        List<Point> path = PathSearch.PathSearch(api.getRobotKinematics().getPosition(), getActiveTargetPointList().get(0).point);
+        followPath(path, getActiveTargetPointList().get(0).point,getActiveTargetPointList().get(0).quaternion);
         scanQRCode(true);
-        moveToWithRetry(pointGoal, pointGoalQuaternion);
+        api.laserControl(true);
+        sleep(1500);
+        api.laserControl(false);
+        List<Point> pathGoal = PathSearch.PathSearch(api.getRobotKinematics().getPosition(), pointGoal);
+        followPath(pathGoal, pointGoal,pointGoalQuaternion);
         missionEnd();
     }
 
@@ -50,6 +54,18 @@ public class YourService extends KiboRpcService {
     // You can add your method
     private String yourMethod(){
         return "your method";
+    }
+
+    private void followPath (List<Point> path, Point targetPoint, Quaternion quaternion){
+        for(Point p : path) {
+            Point currentPOS = api.getRobotKinematics().getPosition();
+            while (Math.abs(currentPOS.getX() - p.getX()) > 0.075||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.075||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.075) {
+                api.moveTo(p, quaternion, false);
+                currentPOS = api.getRobotKinematics().getPosition();
+            }
+        }
     }
 
     private void getActiveTarget(){
@@ -124,10 +140,40 @@ public class YourService extends KiboRpcService {
         }
         api.reportMissionCompletion(reportString);
     }
+    private List<PointData> getActiveTargetPointList(){
+        List<Integer> targets = api.getActiveTargets();
+        List<PointData> points = new ArrayList<>();
+        for(int t : targets){
+            switch (t){
+                case 1:
+                    points.add(new PointData(point1, point1Quaternion));
+                    break;
+                case 2:
+                    points.add(new PointData(point2, point2Quaternion));
+                    break;
+                case 3:
+                    points.add(new PointData(point3, point3Quaternion));
+                    break;
+                case 4:
+                    points.add(new PointData(point4, point4Quaternion));
+                    break;
+                case 5:
+                    points.add(new PointData(point5, point5Quaternion));
+                    break;
+                case 6:
+                    points.add(new PointData(point6, point6Quaternion));
+                    break;
+                case 7:
+                    points.add(new PointData(point7, point7Quaternion));
+                    break;
+            }
+        }
+        return points;
+    }
 
-    private boolean moveToWithRetry(Point point, Quaternion quaternion) {
+    private boolean moveToWithRetry(Point point, Quaternion quaternion, int loopMAX_time) {
         Result result;
-        final int LOOP_MAX = 10;
+        final int LOOP_MAX = loopMAX_time;
         final float MAX_THRESHOLD = 0.02f;
         result = api.moveTo(point, quaternion, false);
         Quaternion currentQuaternion = api.getRobotKinematics().getOrientation();
