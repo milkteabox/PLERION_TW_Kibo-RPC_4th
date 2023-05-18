@@ -19,6 +19,7 @@ import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
 import jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch;
 
 import static jp.jaxa.iss.kibo.rpc.sampleapk.Constants.*;
+import static jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch.*;
 
 /**
  * Class meant to handle commands from the Ground Data System and execute them in Astrobee
@@ -29,15 +30,9 @@ public class YourService extends KiboRpcService {
     @Override
     protected void runPlan1(){
         api.startMission();
-        Log.i("LOCATE", api.getRobotKinematics().getPosition().toString());
-        List<Point> path = PathSearch.PathSearch(api.getRobotKinematics().getPosition(), getActiveTargetPointList().get(0).point);
-        followPath(path, getActiveTargetPointList().get(0).point,getActiveTargetPointList().get(0).quaternion);
+        followPath(PathSearch(api.getRobotKinematics().getPosition(), pointQR), pointQR, pointQRQuaternion);
         scanQRCode(true);
-        api.laserControl(true);
-        sleep(1500);
-        api.laserControl(false);
-        List<Point> pathGoal = PathSearch.PathSearch(api.getRobotKinematics().getPosition(), pointGoal);
-        followPath(pathGoal, pointGoal,pointGoalQuaternion);
+        followPath(PathSearch(api.getRobotKinematics().getPosition(), pointGoal), pointGoal, pointGoalQuaternion);
         missionEnd();
     }
 
@@ -71,8 +66,9 @@ public class YourService extends KiboRpcService {
     private void getActiveTarget(){
         List<Integer> activeTargets = api.getActiveTargets();
     }
+
     private void scanQRCode(boolean saveImage){
-        System.out.println("ScanQr");
+        Log.i("QR", "Start ScanQr");
         api.flashlightControlBack(0.05f);
         sleep(1);
         Bitmap QRimage_Bitmap = api.getBitmapNavCam();
@@ -81,29 +77,11 @@ public class YourService extends KiboRpcService {
         Mat QRimage_Mat = new Mat();
         Utils.bitmapToMat(QRimage_Bitmap, QRimage_Mat);
         QRCodeDetector qrCodeDetector = new QRCodeDetector();
-        Mat QR_Point = new Mat();
-        Qr_Data = qrCodeDetector.detectAndDecode(QRimage_Mat, QR_Point);
+        Qr_Data = qrCodeDetector.detectAndDecode(QRimage_Mat);
+
+        Log.i("QR", Qr_Data);
 
         api.saveMatImage(QRimage_Mat, "QRcode_Image");
-
-        if(!QR_Point.empty()&&saveImage){
-            org.opencv.core.Point[] vertices = new org.opencv.core.Point[4];
-            Scalar color = new Scalar(255, 0, 0);
-            for (int i = 0; i < 4; i++) {
-                vertices[i] = new org.opencv.core.Point(
-                        QR_Point.get(0, i)[0],
-                        QR_Point.get(0, i)[1]);
-
-                Imgproc.circle(QRimage_Mat, vertices[i], 6, color);
-            }
-            
-            Imgproc.line(QRimage_Mat, vertices[0], vertices[1], color, 3);
-            Imgproc.line(QRimage_Mat, vertices[1], vertices[2], color, 3);
-            Imgproc.line(QRimage_Mat, vertices[2], vertices[3], color, 3);
-            Imgproc.line(QRimage_Mat, vertices[3], vertices[0], color, 3);
-
-            api.saveMatImage(QRimage_Mat, "QRcode_Image");
-        }
     }
 
     private void sleep(long millis){
@@ -164,7 +142,7 @@ public class YourService extends KiboRpcService {
                     points.add(new PointData(point6, point6Quaternion));
                     break;
                 case 7:
-                    points.add(new PointData(point7, point7Quaternion));
+                    points.add(new PointData(pointQR, pointQRQuaternion));
                     break;
             }
         }
