@@ -54,9 +54,9 @@ public class YourService extends KiboRpcService {
     private void followPath (List<Point> path, Point targetPoint, Quaternion quaternion){
         for(Point p : path) {
             Point currentPOS = api.getRobotKinematics().getPosition();
-            while (Math.abs(currentPOS.getX() - p.getX()) > 0.075||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.075||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.075) {
+            while (Math.abs(currentPOS.getX() - p.getX()) > 0.00735||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.00735||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.00735) {
                 api.moveTo(p, quaternion, false);
                 currentPOS = api.getRobotKinematics().getPosition();
             }

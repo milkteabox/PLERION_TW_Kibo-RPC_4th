@@ -59,7 +59,7 @@ public class PathSearch {
                     continue;
                 }
 
-                double distanceToNeighbor = pointDistance(currentNode.getPoint(), neighbor);
+                double distanceToNeighbor = pointDistance(currentNode.getPoint(), neighbor) + currentNode.getDistance();
                 Node newNode = new Node(neighbor, distanceToNeighbor, currentNode);
                 queue.offer(newNode);
             }
