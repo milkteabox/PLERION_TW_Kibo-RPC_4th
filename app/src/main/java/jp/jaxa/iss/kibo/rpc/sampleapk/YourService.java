@@ -11,6 +11,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
 
@@ -131,17 +132,23 @@ public class YourService extends KiboRpcService {
 
     private void scanQRCode(boolean saveImage){
         Log.i("QR", "Start ScanQr");
+        Log.i("QR", api.getRobotKinematics().getPosition().toString());
         api.flashlightControlBack(0.05f);
         sleep(1);
         Mat QRimage_Mat = getCalibratedImage();
         api.flashlightControlBack(0.0f);
 
+        Mat QRimage_resizeMat = getCalibratedImage();
+        Size newSize = new Size(QRimage_Mat.cols() * 2.75, QRimage_Mat.rows() * 2.75);
+
+        Imgproc.resize(QRimage_Mat, QRimage_resizeMat, newSize, 0, 0, Imgproc.INTER_CUBIC);
+
         QRCodeDetector qrCodeDetector = new QRCodeDetector();
-        Qr_Data = qrCodeDetector.detectAndDecode(QRimage_Mat);
+        Qr_Data = qrCodeDetector.detectAndDecode(QRimage_resizeMat);
 
         Log.i("QR", "QR result: "+ Qr_Data);
 
-        if(saveImage){ api.saveMatImage(QRimage_Mat, "QRcode_Image"); }
+        if(saveImage){ api.saveMatImage(QRimage_Mat, "QRcode_Image.mat"); }
 
     }
 
