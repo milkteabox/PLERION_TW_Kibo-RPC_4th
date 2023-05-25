@@ -4,7 +4,12 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.opencv.android.Utils;
+import org.opencv.aruco.Aruco;
+import org.opencv.calib3d.Calib3d;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
+import org.opencv.core.MatOfFloat;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
@@ -26,6 +31,7 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch.*;
  */
 
 public class YourService extends KiboRpcService {
+    private double[][] navCamIntrinsics = api.getNavCamIntrinsics();
     private String Qr_Data;
     @Override
     protected void runPlan1(){
@@ -67,21 +73,75 @@ public class YourService extends KiboRpcService {
         List<Integer> activeTargets = api.getActiveTargets();
     }
 
+    private void AimAndHitTarget() {
+        Mat NavCamMat = getCalibratedImage();
+
+        List<Mat> arucoCorners = new ArrayList<>();
+        Mat arucoIDs = new Mat();
+
+        Aruco.detectMarkers(
+                NavCamMat,
+                Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250),
+                arucoCorners,
+                arucoIDs
+                );
+
+    }
+
+    private Mat getCalibratedImage() {
+        double[] camDoubleMatrix = navCamIntrinsics[0];
+        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
+
+        Mat originalImage = api.getMatNavCam();
+
+        Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
+
+        cameraMatrix.put(0,0, camDoubleMatrix[0]);
+        cameraMatrix.put(0,1, camDoubleMatrix[1]);
+        cameraMatrix.put(0,2, camDoubleMatrix[2]);
+        cameraMatrix.put(1,0, camDoubleMatrix[3]);
+        cameraMatrix.put(1,1, camDoubleMatrix[4]);
+        cameraMatrix.put(1,2, camDoubleMatrix[5]);
+        cameraMatrix.put(2,0, camDoubleMatrix[6]);
+        cameraMatrix.put(2,1, camDoubleMatrix[7]);
+        cameraMatrix.put(2,2, camDoubleMatrix[8]);
+
+        Mat distortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
+
+        distortionCoefficients.put(0,0, distortionCoefficientsDoubleMatrix[0]);
+        distortionCoefficients.put(0,1, distortionCoefficientsDoubleMatrix[1]);
+        distortionCoefficients.put(0,2, distortionCoefficientsDoubleMatrix[2]);
+        distortionCoefficients.put(0,3, distortionCoefficientsDoubleMatrix[3]);
+        distortionCoefficients.put(0,4, distortionCoefficientsDoubleMatrix[4]);
+
+
+        Mat calibrateImaged = new Mat();
+
+
+        Imgproc.undistort(
+                originalImage,
+                calibrateImaged,
+                cameraMatrix,
+                distortionCoefficients
+        );
+
+        return calibrateImaged;
+    }
+
     private void scanQRCode(boolean saveImage){
         Log.i("QR", "Start ScanQr");
         api.flashlightControlBack(0.05f);
         sleep(1);
-        Bitmap QRimage_Bitmap = api.getBitmapNavCam();
+        Mat QRimage_Mat = getCalibratedImage();
         api.flashlightControlBack(0.0f);
 
-        Mat QRimage_Mat = new Mat();
-        Utils.bitmapToMat(QRimage_Bitmap, QRimage_Mat);
         QRCodeDetector qrCodeDetector = new QRCodeDetector();
         Qr_Data = qrCodeDetector.detectAndDecode(QRimage_Mat);
 
-        Log.i("QR", Qr_Data);
+        Log.i("QR", "QR result: "+ Qr_Data);
 
-        api.saveMatImage(QRimage_Mat, "QRcode_Image");
+        if(saveImage){ api.saveMatImage(QRimage_Mat, "QRcode_Image"); }
+
     }
 
     private void sleep(long millis){
