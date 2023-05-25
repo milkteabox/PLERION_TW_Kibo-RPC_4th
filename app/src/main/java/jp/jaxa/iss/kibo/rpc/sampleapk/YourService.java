@@ -31,11 +31,12 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch.*;
  */
 
 public class YourService extends KiboRpcService {
-    private double[][] navCamIntrinsics = api.getNavCamIntrinsics();
+    private double[][] navCamIntrinsics;
     private String Qr_Data;
     @Override
     protected void runPlan1(){
         api.startMission();
+        navCamIntrinsics = api.getNavCamIntrinsics();
         followPath(PathSearch(api.getRobotKinematics().getPosition(), pointQR), pointQR, pointQRQuaternion);
         scanQRCode(true);
         followPath(PathSearch(api.getRobotKinematics().getPosition(), pointGoal), pointGoal, pointGoalQuaternion);
