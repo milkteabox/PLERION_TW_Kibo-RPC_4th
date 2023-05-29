@@ -36,13 +36,13 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch.*;
 public class YourService extends KiboRpcService {
     private double[][] navCamIntrinsics;
 
-    private String Qr_Data;
+    private String Qr_Data = "ASTROBEE";
     @Override
     protected void runPlan1(){
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
         moveToWithRetry(point2, point2Quaternion, 15);
-        sleep(30);
+        sleep(5000);
         aimAndHitTarget();
         missionEnd();
     }
@@ -99,35 +99,35 @@ public class YourService extends KiboRpcService {
 
         MatOfPoint3f RUAruco = new MatOfPoint3f(
                 new Point3(7.5, 6.25, 0),
-                new Point3(7.5, 1.25, 0),
+                new Point3(12.5, 6.25, 0),
                 new Point3(12.5, 1.25, 0),
-                new Point3(12.5, 6.25, 0)
+                new Point3(7.5, 1.25, 0)
         );
         boardArucoObjPoints.add(RUAruco);
 
         MatOfPoint3f LUAruco = new MatOfPoint3f(
                 new Point3(-12.5, 6.25, 0),
-                new Point3(-12.5, 1.25, 0),
                 new Point3(-7.5, 6.25, 0),
-                new Point3(-7.5, 1.25, 0)
+                new Point3(-7.5, 1.25, 0),
+                new Point3(-12.5, 1.25, 0)
         );
         boardArucoObjPoints.add(LUAruco);
 
-        MatOfPoint3f LUDruco = new MatOfPoint3f(
+        MatOfPoint3f LDAruco = new MatOfPoint3f(
                 new Point3(-12.5, -1.25, 0),
-                new Point3(-12.5, -6.25, 0),
+                new Point3(-7.5, -1.25, 0),
                 new Point3(-7.5, -6.25, 0),
-                new Point3(-7.5, -1.25, 0)
+                new Point3(-12.5, -6.25, 0)
         );
-        boardArucoObjPoints.add(LUDruco);
+        boardArucoObjPoints.add(LDAruco);
 
-        MatOfPoint3f RUDruco = new MatOfPoint3f(
+        MatOfPoint3f RDAruco = new MatOfPoint3f(
                 new Point3(7.5, -1.25, 0),
-                new Point3(7.5, -6.25, 0),
+                new Point3(12.5, -1.25, 0),
                 new Point3(12.5, -6.25, 0),
-                new Point3(12.5, -1.25, 0)
+                new Point3(7.5, -6.25, 0)
         );
-        boardArucoObjPoints.add(RUDruco);
+        boardArucoObjPoints.add(RDAruco);
 
         MatOfInt boardArucoIDs = new MatOfInt(5, 6, 7, 8);
 
