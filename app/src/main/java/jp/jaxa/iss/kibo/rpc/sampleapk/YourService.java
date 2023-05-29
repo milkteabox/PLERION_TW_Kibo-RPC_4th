@@ -2,14 +2,16 @@ package jp.jaxa.iss.kibo.rpc.sampleapk;
 
 import android.graphics.Bitmap;
 import android.util.Log;
+import android.widget.Switch;
 
 import org.opencv.android.Utils;
 import org.opencv.aruco.Aruco;
-import org.opencv.calib3d.Calib3d;
+import org.opencv.aruco.Board;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfDouble;
-import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
+import org.opencv.core.MatOfPoint3f;
+import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -33,14 +35,15 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch.*;
 
 public class YourService extends KiboRpcService {
     private double[][] navCamIntrinsics;
+
     private String Qr_Data;
     @Override
     protected void runPlan1(){
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
-        followPath(PathSearch(api.getRobotKinematics().getPosition(), pointQR), pointQR, pointQRQuaternion);
-        scanQRCode(true);
-        followPath(PathSearch(api.getRobotKinematics().getPosition(), pointGoal), pointGoal, pointGoalQuaternion);
+        moveToWithRetry(point2, point2Quaternion, 15);
+        sleep(30);
+        aimAndHitTarget();
         missionEnd();
     }
 
@@ -75,7 +78,7 @@ public class YourService extends KiboRpcService {
         List<Integer> activeTargets = api.getActiveTargets();
     }
 
-    private void AimAndHitTarget() {
+    private void aimAndHitTarget() {
         Mat NavCamMat = getCalibratedImage();
 
         List<Mat> arucoCorners = new ArrayList<>();
@@ -88,7 +91,70 @@ public class YourService extends KiboRpcService {
                 arucoIDs
                 );
 
+        Aruco.drawDetectedMarkers(NavCamMat, arucoCorners, arucoIDs, new Scalar(0, 255, 0));
+        int arucoNum = (int) arucoIDs.total();
+
+
+        List<Mat> boardArucoObjPoints = new ArrayList<>();
+
+        MatOfPoint3f RUAruco = new MatOfPoint3f(
+                new Point3(7.5, 6.25, 0),
+                new Point3(7.5, 1.25, 0),
+                new Point3(12.5, 1.25, 0),
+                new Point3(12.5, 6.25, 0)
+        );
+        boardArucoObjPoints.add(RUAruco);
+
+        MatOfPoint3f LUAruco = new MatOfPoint3f(
+                new Point3(-12.5, 6.25, 0),
+                new Point3(-12.5, 1.25, 0),
+                new Point3(-7.5, 6.25, 0),
+                new Point3(-7.5, 1.25, 0)
+        );
+        boardArucoObjPoints.add(LUAruco);
+
+        MatOfPoint3f LUDruco = new MatOfPoint3f(
+                new Point3(-12.5, -1.25, 0),
+                new Point3(-12.5, -6.25, 0),
+                new Point3(-7.5, -6.25, 0),
+                new Point3(-7.5, -1.25, 0)
+        );
+        boardArucoObjPoints.add(LUDruco);
+
+        MatOfPoint3f RUDruco = new MatOfPoint3f(
+                new Point3(7.5, -1.25, 0),
+                new Point3(7.5, -6.25, 0),
+                new Point3(12.5, -6.25, 0),
+                new Point3(12.5, -1.25, 0)
+        );
+        boardArucoObjPoints.add(RUDruco);
+
+        MatOfInt boardArucoIDs = new MatOfInt(5, 6, 7, 8);
+
+        Board targetBoard = Board.create(boardArucoObjPoints, Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250), boardArucoIDs);
+
+
+        Mat nullCameraMatrix = new Mat(3, 3 , CvType.CV_64F);
+        Mat nullDistortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
+
+        Mat rvec = new Mat();
+        Mat tvec = new Mat();
+
+        Aruco.estimatePoseBoard(arucoCorners, arucoIDs, targetBoard, nullCameraMatrix, nullDistortionCoefficients, rvec, tvec);
+        Aruco.drawAxis(NavCamMat, nullCameraMatrix, nullDistortionCoefficients, rvec, tvec, 0.1f);
+
+        api.saveMatImage(NavCamMat, "Axis.mat");
     }
+
+    private double getPixelDistance(double[] pixel1, double[] pixel2) {
+        double dX = pixel2[0] - pixel1[0];
+        double dY = pixel2[1] - pixel1[1];
+
+        double distance = Math.sqrt(dX * dX + dY * dY);
+
+        return distance;
+    }
+
 
     private Mat getCalibratedImage() {
         double[] camDoubleMatrix = navCamIntrinsics[0];
@@ -129,6 +195,7 @@ public class YourService extends KiboRpcService {
 
         return calibrateImaged;
     }
+
 
     private void scanQRCode(boolean saveImage){
         Log.i("QR", "Start ScanQr");
