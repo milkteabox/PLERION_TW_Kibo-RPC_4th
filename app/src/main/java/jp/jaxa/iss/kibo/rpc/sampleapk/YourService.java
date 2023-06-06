@@ -7,9 +7,12 @@ import android.widget.Switch;
 import org.opencv.android.Utils;
 import org.opencv.aruco.Aruco;
 import org.opencv.aruco.Board;
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfInt;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
@@ -41,9 +44,8 @@ public class YourService extends KiboRpcService {
     protected void runPlan1(){
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
-        moveToWithRetry(point2, point2Quaternion, 15);
-        sleep(5000);
-        aimAndHitTarget();
+        moveToWithRetry(point2, point2Quaternion, 10);
+        aimAndHitTarget(2);
         missionEnd();
     }
 
@@ -78,22 +80,72 @@ public class YourService extends KiboRpcService {
         List<Integer> activeTargets = api.getActiveTargets();
     }
 
-    private void aimAndHitTarget() {
-        Mat NavCamMat = getCalibratedImage();
+    private void aimAndHitTarget(int targetNum) {
+
+        double[] camDoubleMatrix = navCamIntrinsics[0];
+        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
+
+
+
+        Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
+
+        cameraMatrix.put(0,0, camDoubleMatrix[0]);
+        cameraMatrix.put(0,1, camDoubleMatrix[1]);
+        cameraMatrix.put(0,2, camDoubleMatrix[2]);
+        cameraMatrix.put(1,0, camDoubleMatrix[3]);
+        cameraMatrix.put(1,1, camDoubleMatrix[4]);
+        cameraMatrix.put(1,2, camDoubleMatrix[5]);
+        cameraMatrix.put(2,0, camDoubleMatrix[6]);
+        cameraMatrix.put(2,1, camDoubleMatrix[7]);
+        cameraMatrix.put(2,2, camDoubleMatrix[8]);
+
+        Mat distortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
+
+        distortionCoefficients.put(0,0, distortionCoefficientsDoubleMatrix[0]);
+        distortionCoefficients.put(0,1, distortionCoefficientsDoubleMatrix[1]);
+        distortionCoefficients.put(0,2, distortionCoefficientsDoubleMatrix[2]);
+        distortionCoefficients.put(0,3, distortionCoefficientsDoubleMatrix[3]);
+        distortionCoefficients.put(0,4, distortionCoefficientsDoubleMatrix[4]);
+
+
+        sleep(5000);
+
+        Mat originalImage = api.getMatNavCam();
+        Mat navCamMat = originalImage;
+
+        Mat arucoDrawMat = navCamMat;
 
         List<Mat> arucoCorners = new ArrayList<>();
         Mat arucoIDs = new Mat();
 
         Aruco.detectMarkers(
-                NavCamMat,
+                navCamMat,
                 Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250),
                 arucoCorners,
                 arucoIDs
                 );
 
-        Aruco.drawDetectedMarkers(NavCamMat, arucoCorners, arucoIDs, new Scalar(0, 255, 0));
-        int arucoNum = (int) arucoIDs.total();
+        Aruco.drawDetectedMarkers(arucoDrawMat, arucoCorners, arucoIDs, new Scalar(0, 255, 0));
 
+        double arucoPixelSize = 8;
+        int arucoSideNum = 0;
+
+        if(!arucoCorners.isEmpty()){
+            for (int i = 0; i < arucoIDs.total(); i++) {
+                Mat curentCornerPoints = arucoCorners.get(i);
+
+                for (int j = 0; j < 4; j++) {
+                    double[] point1 = curentCornerPoints.get(0, j);
+                    double[] point2 = curentCornerPoints.get(0, (j + 1) % 4);
+
+                    arucoPixelSize += getPixelDistance(point1, point2);
+                    arucoSideNum++;
+                }
+            }
+            arucoPixelSize = (arucoPixelSize / arucoSideNum) / 5;
+        }
+
+        Log.i("arucoPixelSize", "a : " + arucoPixelSize);
 
         List<Mat> boardArucoObjPoints = new ArrayList<>();
 
@@ -129,21 +181,62 @@ public class YourService extends KiboRpcService {
         );
         boardArucoObjPoints.add(RDAruco);
 
-        MatOfInt boardArucoIDs = new MatOfInt(5, 6, 7, 8);
+        int startingValue = (targetNum - 1) * 4 + 1;
+        MatOfInt boardArucoIDs = new MatOfInt(startingValue, startingValue + 1, startingValue + 2, startingValue + 3);
 
         Board targetBoard = Board.create(boardArucoObjPoints, Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250), boardArucoIDs);
-
-
-        Mat nullCameraMatrix = new Mat(3, 3 , CvType.CV_64F);
-        Mat nullDistortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
 
         Mat rvec = new Mat();
         Mat tvec = new Mat();
 
-        Aruco.estimatePoseBoard(arucoCorners, arucoIDs, targetBoard, nullCameraMatrix, nullDistortionCoefficients, rvec, tvec);
-        Aruco.drawAxis(NavCamMat, nullCameraMatrix, nullDistortionCoefficients, rvec, tvec, 0.1f);
+        Aruco.estimatePoseBoard(arucoCorners, arucoIDs, targetBoard, cameraMatrix, distortionCoefficients, rvec, tvec);
 
-        api.saveMatImage(NavCamMat, "Axis.mat");
+        MatOfPoint3f origin = new MatOfPoint3f(new Point3(0, 0, 0));
+
+        MatOfDouble DoubleDistortionCoefficients = new MatOfDouble();
+        distortionCoefficients.convertTo(DoubleDistortionCoefficients, CvType.CV_64F);
+
+        MatOfPoint2f arucoCenterPoints = new MatOfPoint2f();
+        Calib3d.projectPoints(origin, rvec, tvec, cameraMatrix, DoubleDistortionCoefficients, arucoCenterPoints);
+
+        Imgproc.circle(arucoDrawMat, arucoCenterPoints.toArray()[0], 1, new Scalar(255, 255, 255),2);
+
+        api.saveMatImage(arucoDrawMat, "Axis.mat");
+
+        Log.i("Axis", tvec.dump());
+
+        double arucoCenterX = arucoCenterPoints.toArray()[0].x;
+        double arucoCenterY = arucoCenterPoints.toArray()[0].y;
+
+
+
+        double tx = tvec.get(0, 0)[0] - 9.94;
+        double ty = tvec.get(1, 0)[0] + 2.85;
+
+
+//        Mat targetCutMat = navCamMat.submat(
+//                (int) (arucoCenterX - 15 * arucoPixelSize), (int) (arucoCenterX + 15 * arucoPixelSize),
+//                (int) (arucoCenterY - (21 * arucoPixelSize)), (int) (arucoCenterY + 21 * arucoPixelSize));
+//        Imgproc.threshold(targetCutMat, targetCutMat, 70, 255, Imgproc.THRESH_BINARY);
+//
+//        Mat circles = new Mat();
+//
+//        Imgproc.HoughCircles(targetCutMat, circles, Imgproc.HOUGH_GRADIENT,1, 20, 25, 25,25);
+//
+//        for (int col = 0; col < circles.cols(); col++) {
+//            double[] circle = circles.get(0, col);
+//            Log.i("Circle", "X: " + circle[0] + " Y: " + circle[1] +"R: " + circle[2]);
+//            Imgproc.circle(targetCutMat, arucoCenterPoints.toArray()[0], 1, new Scalar(255, 255, 255),2);
+//        }
+//        api.saveMatImage(targetCutMat, "Circle.mat");
+//
+//        double ty = arucoCenterY + (arucoCenterY - 21 * arucoPixelSize) + circles.get(0, 0)[1];
+//        double tx = arucoCenterX + (arucoCenterX - 15 * arucoPixelSize) + circles.get(0, 0)[0];
+
+        Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+        moveToWithRetry(new Point(point2.getX() + tx/100, point2.getY() + ty/100, point2.getZ()), point2Quaternion, 15);
+        api.laserControl(true);
+        api.takeTargetSnapshot(2);
     }
 
     private double getPixelDistance(double[] pixel1, double[] pixel2) {
@@ -301,5 +394,12 @@ public class YourService extends KiboRpcService {
             ++loopCounter;
         }
         return result.hasSucceeded();
+    }
+
+    private static double pointDistance(Point point1, Point point2){
+        double dx = point2.getX()-point1.getX();
+        double dy = point2.getY()-point1.getY();
+        double dz = point2.getZ()-point1.getZ();
+        return Math.sqrt(dx*dx + dy*dy + dz*dz);
     }
 }
