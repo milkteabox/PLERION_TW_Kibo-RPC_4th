@@ -27,10 +27,8 @@ import gov.nasa.arc.astrobee.Result;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
-import jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch;
 
 import static jp.jaxa.iss.kibo.rpc.sampleapk.Constants.*;
-import static jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch.*;
 
 /**
  * Class meant to handle commands from the Ground Data System and execute them in Astrobee
@@ -38,14 +36,20 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.PathSearch.PathSearch.*;
 
 public class YourService extends KiboRpcService {
     private double[][] navCamIntrinsics;
+    double[] camDoubleMatrix;
+    double[] distortionCoefficientsDoubleMatrix;
 
     private String Qr_Data = "ASTROBEE";
     @Override
     protected void runPlan1(){
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
-        moveToWithRetry(point2, point2Quaternion, 10);
-        aimAndHitTarget(2);
+        camDoubleMatrix = navCamIntrinsics[0];
+        distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
+
+        moveToWithRetry(new Point(10.5,-9.8,4.85), point2Quaternion, 1);
+        moveToWithRetry(new Point(10.71,-7.7,4.48), point2Quaternion, 15);
+        aimAndHitTarget(3);
         missionEnd();
     }
 
@@ -81,11 +85,6 @@ public class YourService extends KiboRpcService {
     }
 
     private void aimAndHitTarget(int targetNum) {
-
-        double[] camDoubleMatrix = navCamIntrinsics[0];
-        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
-
-
 
         Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
 
@@ -210,8 +209,8 @@ public class YourService extends KiboRpcService {
 
 
 
-        double tx = tvec.get(0, 0)[0] - 9.94;
-        double ty = tvec.get(1, 0)[0] + 2.85;
+        double tx = tvec.get(0, 0)[0] - 10.24;
+        double ty = -tvec.get(1, 0)[0] - 5.1;
 
 
 //        Mat targetCutMat = navCamMat.submat(
@@ -250,9 +249,6 @@ public class YourService extends KiboRpcService {
 
 
     private Mat getCalibratedImage() {
-        double[] camDoubleMatrix = navCamIntrinsics[0];
-        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
-
         Mat originalImage = api.getMatNavCam();
 
         Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
@@ -294,7 +290,7 @@ public class YourService extends KiboRpcService {
         Log.i("QR", "Start ScanQr");
         Log.i("QR", api.getRobotKinematics().getPosition().toString());
         api.flashlightControlBack(0.05f);
-        sleep(1);
+        sleep(5000);
         Mat QRimage_Mat = getCalibratedImage();
         api.flashlightControlBack(0.0f);
 
