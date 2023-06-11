@@ -36,20 +36,16 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.Constants.*;
 
 public class YourService extends KiboRpcService {
     private double[][] navCamIntrinsics;
-    double[] camDoubleMatrix;
-    double[] distortionCoefficientsDoubleMatrix;
-
     private String Qr_Data = "ASTROBEE";
     @Override
     protected void runPlan1(){
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
-        camDoubleMatrix = navCamIntrinsics[0];
-        distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
+        PathMap pathMap = new PathMap();
 
-        moveToWithRetry(new Point(10.5,-9.8,4.85), point2Quaternion, 1);
-        moveToWithRetry(new Point(10.71,-7.7,4.48), point2Quaternion, 15);
-        aimAndHitTarget(3);
+        followPath(pathMap.getPath(0, 5), point5, point5Quaternion);
+        moveToWithRetry(point5, point5Quaternion, 15);
+        aimAndHitTarget(5);
         missionEnd();
     }
 
@@ -71,9 +67,9 @@ public class YourService extends KiboRpcService {
     private void followPath (List<Point> path, Point targetPoint, Quaternion quaternion){
         for(Point p : path) {
             Point currentPOS = api.getRobotKinematics().getPosition();
-            while (Math.abs(currentPOS.getX() - p.getX()) > 0.00735||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.00735||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.00735) {
+            while (Math.abs(currentPOS.getX() - p.getX()) > 0.0735||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.0735||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.0735) {
                 api.moveTo(p, quaternion, false);
                 currentPOS = api.getRobotKinematics().getPosition();
             }
@@ -85,6 +81,9 @@ public class YourService extends KiboRpcService {
     }
 
     private void aimAndHitTarget(int targetNum) {
+
+        double[] camDoubleMatrix = navCamIntrinsics[0];
+        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
 
         Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
 
@@ -146,44 +145,10 @@ public class YourService extends KiboRpcService {
 
         Log.i("arucoPixelSize", "a : " + arucoPixelSize);
 
-        List<Mat> boardArucoObjPoints = new ArrayList<>();
-
-        MatOfPoint3f RUAruco = new MatOfPoint3f(
-                new Point3(7.5, 6.25, 0),
-                new Point3(12.5, 6.25, 0),
-                new Point3(12.5, 1.25, 0),
-                new Point3(7.5, 1.25, 0)
-        );
-        boardArucoObjPoints.add(RUAruco);
-
-        MatOfPoint3f LUAruco = new MatOfPoint3f(
-                new Point3(-12.5, 6.25, 0),
-                new Point3(-7.5, 6.25, 0),
-                new Point3(-7.5, 1.25, 0),
-                new Point3(-12.5, 1.25, 0)
-        );
-        boardArucoObjPoints.add(LUAruco);
-
-        MatOfPoint3f LDAruco = new MatOfPoint3f(
-                new Point3(-12.5, -1.25, 0),
-                new Point3(-7.5, -1.25, 0),
-                new Point3(-7.5, -6.25, 0),
-                new Point3(-12.5, -6.25, 0)
-        );
-        boardArucoObjPoints.add(LDAruco);
-
-        MatOfPoint3f RDAruco = new MatOfPoint3f(
-                new Point3(7.5, -1.25, 0),
-                new Point3(12.5, -1.25, 0),
-                new Point3(12.5, -6.25, 0),
-                new Point3(7.5, -6.25, 0)
-        );
-        boardArucoObjPoints.add(RDAruco);
-
         int startingValue = (targetNum - 1) * 4 + 1;
         MatOfInt boardArucoIDs = new MatOfInt(startingValue, startingValue + 1, startingValue + 2, startingValue + 3);
 
-        Board targetBoard = Board.create(boardArucoObjPoints, Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250), boardArucoIDs);
+        Board targetBoard = Board.create(boardArucoObjPoints(), Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250), boardArucoIDs);
 
         Mat rvec = new Mat();
         Mat tvec = new Mat();
@@ -207,35 +172,55 @@ public class YourService extends KiboRpcService {
         double arucoCenterX = arucoCenterPoints.toArray()[0].x;
         double arucoCenterY = arucoCenterPoints.toArray()[0].y;
 
+        double tx;
+        double ty;
 
+        switch (targetNum){
+            case 1:
+                tx = tvec.get(0, 0)[0] - 10.6 ;
+                ty = -tvec.get(1, 0)[0] - 5.4 ;
 
-        double tx = tvec.get(0, 0)[0] - 10.24;
-        double ty = -tvec.get(1, 0)[0] - 5.1;
+                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+                moveToWithRetry(new Point(point1.getX() + tx/100, point1.getY(), point1.getZ() - ty/100), point1Quaternion, 15);
+                break;
+            case 2:
+                tx = tvec.get(0, 0)[0] - 10.24 ;
+                ty = -tvec.get(1, 0)[0] - 5.1 ;
 
+                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+                moveToWithRetry(new Point(point2.getX() + tx/100, point2.getY() + ty/100, point2.getZ()), point2Quaternion, 15);
+                break;
+            case 3:
+                tx = tvec.get(0, 0)[0] - 10.5;
+                ty = -tvec.get(1, 0)[0] - 5.1;
 
-//        Mat targetCutMat = navCamMat.submat(
-//                (int) (arucoCenterX - 15 * arucoPixelSize), (int) (arucoCenterX + 15 * arucoPixelSize),
-//                (int) (arucoCenterY - (21 * arucoPixelSize)), (int) (arucoCenterY + 21 * arucoPixelSize));
-//        Imgproc.threshold(targetCutMat, targetCutMat, 70, 255, Imgproc.THRESH_BINARY);
-//
-//        Mat circles = new Mat();
-//
-//        Imgproc.HoughCircles(targetCutMat, circles, Imgproc.HOUGH_GRADIENT,1, 20, 25, 25,25);
-//
-//        for (int col = 0; col < circles.cols(); col++) {
-//            double[] circle = circles.get(0, col);
-//            Log.i("Circle", "X: " + circle[0] + " Y: " + circle[1] +"R: " + circle[2]);
-//            Imgproc.circle(targetCutMat, arucoCenterPoints.toArray()[0], 1, new Scalar(255, 255, 255),2);
-//        }
-//        api.saveMatImage(targetCutMat, "Circle.mat");
-//
-//        double ty = arucoCenterY + (arucoCenterY - 21 * arucoPixelSize) + circles.get(0, 0)[1];
-//        double tx = arucoCenterX + (arucoCenterX - 15 * arucoPixelSize) + circles.get(0, 0)[0];
+                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+                moveToWithRetry(new Point(point3.getX() - ty/100, point3.getY() + tx/100, point3.getZ()), point3Quaternion, 15);
+                break;
+            case 4:
+                tx = tvec.get(0, 0)[0] - 10.5;
+                ty = -tvec.get(1, 0)[0] - 5.1;
 
-        Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-        moveToWithRetry(new Point(point2.getX() + tx/100, point2.getY() + ty/100, point2.getZ()), point2Quaternion, 15);
+                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+                moveToWithRetry(new Point(point4.getX(), point4.getY() - tx/100, point4.getZ() - ty/100), point4Quaternion, 15);
+                break;
+            case 5:
+                tx = tvec.get(0, 0)[0] - 10.55;
+                ty = -tvec.get(1, 0)[0] - 4.55;
+
+                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+                moveToWithRetry(new Point(point5.getX() + tx/100, point5.getY() - ty/100, point5.getZ() ), point5Quaternion, 15);
+                break;
+            case 6:
+                tx = tvec.get(0, 0)[0] - 10.5;
+                ty = -tvec.get(1, 0)[0] - 5.1;
+
+                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+                moveToWithRetry(new Point(point6.getX(), point6.getY() + tx/100, point6.getZ() + ty/100), point6Quaternion, 15);
+                break;
+        }
         api.laserControl(true);
-        api.takeTargetSnapshot(2);
+        api.takeTargetSnapshot(targetNum);
     }
 
     private double getPixelDistance(double[] pixel1, double[] pixel2) {
@@ -250,6 +235,9 @@ public class YourService extends KiboRpcService {
 
     private Mat getCalibratedImage() {
         Mat originalImage = api.getMatNavCam();
+
+        double[] camDoubleMatrix = navCamIntrinsics[0];
+        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
 
         Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
 

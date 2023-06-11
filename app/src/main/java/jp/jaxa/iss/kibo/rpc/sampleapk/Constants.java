@@ -1,5 +1,9 @@
 package jp.jaxa.iss.kibo.rpc.sampleapk;
 
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint3f;
+import org.opencv.core.Point3;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,80 +58,41 @@ public class Constants {
     public final static Point pointKOZmin_5 = new Point(10.563d, -7.1449d, 4.6544d);
     public final static Point pointKOZmax_5 = new Point(10.709d, -6.8099d, 4.8164d);
 
-    public final static Point pointNav_point1Upper = new Point(11.2746d, -9.92284d, 4.735d);
-    public final static Point pointNav_point1ClosedAFT = new Point(10.695d, -9.92284d, 5.2988d);
-    public final static Point pointNav_point1ClosedAFTandSTBD = new Point(10.695d, -9.75d, 5.2988d);
-    public final static Point pointNav_point1ClosedSTBD = new Point(11.2746d, -9.75d, 5.2988d);
+    public final static List<Mat> boardArucoObjPoints(){
+        List<Mat> boardArucoObjPoints = new ArrayList<>();
 
-    public final static Point pointNav_point2ClosedLock = new Point(10.695d, -9.275d, 5.2988d);
-    public final static Point pointNav_point2Lower = new Point(10.612d, -9.0709d, 4.85d);
+        MatOfPoint3f RUAruco = new MatOfPoint3f(
+                new Point3(7.5, 6.25, 0),
+                new Point3(12.5, 6.25, 0),
+                new Point3(12.5, 1.25, 0),
+                new Point3(7.5, 1.25, 0)
+        );
+        boardArucoObjPoints.add(RUAruco);
 
-    public final static Point pointNav_point3Lower = new Point(10.71d, -7.7d, 4.85d);
-    public final static Point pointNav_point3LowerL = new Point(10.71d, -7.7d, 5.3393d);
+        MatOfPoint3f LUAruco = new MatOfPoint3f(
+                new Point3(-12.5, 6.25, 0),
+                new Point3(-7.5, 6.25, 0),
+                new Point3(-7.5, 1.25, 0),
+                new Point3(-12.5, 1.25, 0)
+        );
+        boardArucoObjPoints.add(LUAruco);
 
-    public final static Point pointNav_point4Lower = new Point(10.51d, -6.7185d, 4.985d);
-    public final static Point pointNav_point4ClosedLock = new Point(10.51d, -7.375d, 5.1804d);
-    public final static Point pointNav_point4ClosedSTBD = new Point(10.51d, -6.615d, 5.1804d);
+        MatOfPoint3f LDAruco = new MatOfPoint3f(
+                new Point3(-12.5, -1.25, 0),
+                new Point3(-7.5, -1.25, 0),
+                new Point3(-7.5, -6.25, 0),
+                new Point3(-12.5, -6.25, 0)
+        );
+        boardArucoObjPoints.add(LDAruco);
 
-    public final static Point pointNav_point5UnderKOZ3 = new Point(11.114d, -8.3326d, 5.3393d);
-    public final static Point pointNav_point5ClosedAFT = new Point(10.635d, -7.9756d, 5.3393d);
-    public final static Point pointNav_point5ClosedSTBD = new Point(11.2746d, -7.575d, 5.2988d);
+        MatOfPoint3f RDAruco = new MatOfPoint3f(
+                new Point3(7.5, -1.25, 0),
+                new Point3(12.5, -1.25, 0),
+                new Point3(12.5, -6.25, 0),
+                new Point3(7.5, -6.25, 0)
+        );
+        boardArucoObjPoints.add(RDAruco);
 
-    public final static Point pointNav_between2andQR = new Point(11.295d, -9.0709d, 4.5);
-
-    public final static Point pointNav_underKOZ3ClosedAFT = new Point(10.5d, -8.3326d, 4.889d);
-    public final static Point pointNav_underKOZ3Middle = new Point(10.935d, -8.3326d, 4.889d);
-    public final static Point pointNav_underKOZ3ClosedFWD = new Point(11.3d, -8.3326d, 4.889d);
-
-    public final static Point pointNav_pointQRLower = new Point(11.369d, -8.5518d, 4.85d);
-
-    public final static List<Point> allNavPoints(){
-        List<Point> allNavPoints = new ArrayList<>();
-
-        allNavPoints.add(pointNav_point1Upper);
-        allNavPoints.add(pointNav_point1ClosedAFT);
-        allNavPoints.add(pointNav_point1ClosedAFTandSTBD);
-        allNavPoints.add(pointNav_point1ClosedSTBD);
-        allNavPoints.add(pointNav_point2ClosedLock);
-        allNavPoints.add(pointNav_point2Lower);
-        allNavPoints.add(pointNav_point3Lower);
-        allNavPoints.add(pointNav_point3LowerL);
-        allNavPoints.add(pointNav_point4Lower);
-        allNavPoints.add(pointNav_point4ClosedLock);
-        allNavPoints.add(pointNav_point4ClosedSTBD);
-        allNavPoints.add(pointNav_point5UnderKOZ3);
-        allNavPoints.add(pointNav_point5ClosedAFT);
-        allNavPoints.add(pointNav_point5ClosedSTBD);
-        allNavPoints.add(pointNav_between2andQR);
-        allNavPoints.add(pointNav_underKOZ3ClosedAFT);
-        allNavPoints.add(pointNav_underKOZ3Middle);
-        allNavPoints.add(pointNav_underKOZ3ClosedFWD);
-        allNavPoints.add(pointNav_pointQRLower);
-
-
-
-        return allNavPoints;
-    }
-
-    public final static List<Point> allTargetPoints(){
-        List<Point> allTargetPoints = new ArrayList<>();
-
-        allTargetPoints.add(point1);
-        allTargetPoints.add(point2);
-        allTargetPoints.add(point3);
-        allTargetPoints.add(point4);
-        allTargetPoints.add(point5);
-        allTargetPoints.add(point6);
-        allTargetPoints.add(pointQR);
-        allTargetPoints.add(pointGoal);
-
-        return allTargetPoints;
-    }
-
-    public final static List<Point> allPoints(){
-        List<Point> allPoints = new ArrayList<>();
-        allPoints.addAll(allNavPoints());
-        allPoints.addAll(allTargetPoints());
-        return allPoints;
+        return boardArucoObjPoints;
     }
 }
