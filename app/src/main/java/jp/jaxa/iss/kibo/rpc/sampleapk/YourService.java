@@ -36,16 +36,22 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.Constants.*;
 
 public class YourService extends KiboRpcService {
     private double[][] navCamIntrinsics;
+    private int nowPoint = 0;
     private String Qr_Data = "ASTROBEE";
     @Override
     protected void runPlan1(){
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
-        PathMap pathMap = new PathMap();
 
-        followPath(pathMap.getPath(0, 5), point5, point5Quaternion);
-        moveToWithRetry(point5, point5Quaternion, 15);
-        aimAndHitTarget(5);
+        for(int p : getActiveTarget()){
+            followNumPath(nowPoint, p);
+            api.laserControl(true);
+            api.takeTargetSnapshot(p);
+            nowPoint = p;
+        }
+        api.getTimeRemaining().get(0
+
+        followNumPath(nowPoint, 8);
         missionEnd();
     }
 
@@ -64,20 +70,59 @@ public class YourService extends KiboRpcService {
         return "your method";
     }
 
-    private void followPath (List<Point> path, Point targetPoint, Quaternion quaternion){
+    private void followPath (List<Point> path, Quaternion quaternion){
         for(Point p : path) {
             Point currentPOS = api.getRobotKinematics().getPosition();
-            while (Math.abs(currentPOS.getX() - p.getX()) > 0.0735||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.0735||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.0735) {
+            while (Math.abs(currentPOS.getX() - p.getX()) > 0.0935||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.0935||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.0935) {
                 api.moveTo(p, quaternion, false);
                 currentPOS = api.getRobotKinematics().getPosition();
             }
         }
+
+        int lastIndex = path.size() - 1;
+        Point lastPoint = path.get(lastIndex);
+
+        moveToWithRetry(lastPoint, quaternion, 15);
     }
 
-    private void getActiveTarget(){
+    private void followNumPath (int start, int target){
+        Quaternion targetQuaternion = new Quaternion();
+        switch (target){
+            case 1:
+                targetQuaternion = point1Quaternion;
+                break;
+            case 2:
+                targetQuaternion = point2Quaternion;
+                break;
+            case 3:
+                targetQuaternion = point3Quaternion;
+                break;
+            case 4:
+                targetQuaternion = point4Quaternion;
+                break;
+            case 5:
+                targetQuaternion = point5Quaternion;
+                break;
+            case 6:
+                targetQuaternion = point6Quaternion;
+                break;
+            case 7:
+                targetQuaternion = pointQRQuaternion;
+                break;
+            case 8:
+                targetQuaternion = pointGoalQuaternion;
+                break;
+        }
+        List path = getPath(start, target);
+
+        followPath(path, targetQuaternion);
+    }
+
+    private List<Integer>  getActiveTarget(){
         List<Integer> activeTargets = api.getActiveTargets();
+        return activeTargets;
     }
 
     private void aimAndHitTarget(int targetNum) {
@@ -385,5 +430,10 @@ public class YourService extends KiboRpcService {
         double dy = point2.getY()-point1.getY();
         double dz = point2.getZ()-point1.getZ();
         return Math.sqrt(dx*dx + dy*dy + dz*dz);
+    }
+
+    public static List<Point> getPath(int start, int end){
+        PathMap pathMap = new PathMap();
+        return pathMap.getPath(start, end);
     }
 }
