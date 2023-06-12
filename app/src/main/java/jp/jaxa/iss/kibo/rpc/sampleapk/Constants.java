@@ -35,6 +35,13 @@ public class Constants {
     public final static Point pointGoal = new Point(11.381944d, -8.566172d, 4.48d);
     public final static Quaternion pointGoalQuaternion = new Quaternion(0.0f, 0.0f, -0.707f, 0.707f);
 
+    public final static Point Aim1Point = new Point(11.207, -9.92284, 5.474);
+    public final static Point Aim2Point = new Point(10.456, -9.192, 4.48);
+    public final static Point Aim3Point = new Point(10.711, -7.768, 4.48);
+    public final static Point Aim4Point = new Point(10.51, -6.613, 5.207);
+    public final static Point Aim5Point = new Point(11.046, -7.914, 5.3393);
+    public final static Point Aim6Point = new Point(11.355, -9.055, 4.946);
+
 
     public final static Point pointKIZmin_1 = new Point(10.3d, -10.2d, 4.32d);
     public final static Point pointKIZmax_1 = new Point(11.55d, -6.0d, 5.57d);

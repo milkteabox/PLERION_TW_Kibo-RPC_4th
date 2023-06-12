@@ -212,11 +212,11 @@ public class YourService extends KiboRpcService {
                 moveToWithRetry(new Point(point5.getX() + tx/100, point5.getY() - ty/100, point5.getZ() ), point5Quaternion, 15);
                 break;
             case 6:
-                tx = tvec.get(0, 0)[0] - 10.5;
-                ty = -tvec.get(1, 0)[0] - 5.1;
+                tx = tvec.get(0, 0)[0] - 11.2;
+                ty = -tvec.get(1, 0)[0] - 5.8;
 
                 Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-                moveToWithRetry(new Point(point6.getX(), point6.getY() + tx/100, point6.getZ() + ty/100), point6Quaternion, 15);
+                moveToWithRetry(new Point(point6.getX(), point6.getY() + tx/100, point6.getZ() - ty/100), point6Quaternion, 15);
                 break;
         }
         api.laserControl(true);
