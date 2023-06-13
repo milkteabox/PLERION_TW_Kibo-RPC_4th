@@ -43,13 +43,14 @@ public class YourService extends KiboRpcService {
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
 
-        for(int p : getActiveTarget()){
-            followNumPath(nowPoint, p);
-            api.laserControl(true);
-            api.takeTargetSnapshot(p);
-            nowPoint = p;
+        for (int i =0; i<4; i++){
+            for(Integer p : getActiveTarget()){
+                followNumPath(nowPoint, p);
+                api.laserControl(true);
+                api.takeTargetSnapshot(p);
+                nowPoint = p;
+            }
         }
-        api.getTimeRemaining().get(0
 
         followNumPath(nowPoint, 8);
         missionEnd();
@@ -73,9 +74,9 @@ public class YourService extends KiboRpcService {
     private void followPath (List<Point> path, Quaternion quaternion){
         for(Point p : path) {
             Point currentPOS = api.getRobotKinematics().getPosition();
-            while (Math.abs(currentPOS.getX() - p.getX()) > 0.0935||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.0935||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.0935) {
+            while (Math.abs(currentPOS.getX() - p.getX()) > 0.1535||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.1535||
+                    Math.abs(currentPOS.getZ() - p.getZ()) > 0.1535) {
                 api.moveTo(p, quaternion, false);
                 currentPOS = api.getRobotKinematics().getPosition();
             }
@@ -170,26 +171,6 @@ public class YourService extends KiboRpcService {
 
         Aruco.drawDetectedMarkers(arucoDrawMat, arucoCorners, arucoIDs, new Scalar(0, 255, 0));
 
-        double arucoPixelSize = 8;
-        int arucoSideNum = 0;
-
-        if(!arucoCorners.isEmpty()){
-            for (int i = 0; i < arucoIDs.total(); i++) {
-                Mat curentCornerPoints = arucoCorners.get(i);
-
-                for (int j = 0; j < 4; j++) {
-                    double[] point1 = curentCornerPoints.get(0, j);
-                    double[] point2 = curentCornerPoints.get(0, (j + 1) % 4);
-
-                    arucoPixelSize += getPixelDistance(point1, point2);
-                    arucoSideNum++;
-                }
-            }
-            arucoPixelSize = (arucoPixelSize / arucoSideNum) / 5;
-        }
-
-        Log.i("arucoPixelSize", "a : " + arucoPixelSize);
-
         int startingValue = (targetNum - 1) * 4 + 1;
         MatOfInt boardArucoIDs = new MatOfInt(startingValue, startingValue + 1, startingValue + 2, startingValue + 3);
 
@@ -268,15 +249,6 @@ public class YourService extends KiboRpcService {
         api.takeTargetSnapshot(targetNum);
     }
 
-    private double getPixelDistance(double[] pixel1, double[] pixel2) {
-        double dX = pixel2[0] - pixel1[0];
-        double dY = pixel2[1] - pixel1[1];
-
-        double distance = Math.sqrt(dX * dX + dY * dY);
-
-        return distance;
-    }
-
 
     private Mat getCalibratedImage() {
         Mat originalImage = api.getMatNavCam();
@@ -316,6 +288,9 @@ public class YourService extends KiboRpcService {
         );
 
         return calibrateImaged;
+    }
+
+    private void MultiQR(){
     }
 
 

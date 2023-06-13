@@ -48,7 +48,7 @@ public class PathMap {
         allPath[1][4].add(1, new Point(10.51,-8.3,5.18));
         allPath[1][4].add(2, Aim4Point);
 
-        allPath[1][5].add(0, Aim4Point);
+        allPath[1][5].add(0, Aim5Point);
 
         allPath[1][6].add(0, new Point(11.19,-9.5,5.2988));
         allPath[1][6].add(1, Aim6Point);
@@ -218,5 +218,54 @@ public class PathMap {
 
     public List<Point> getPath(int start, int end){
         return allPath[start][end];
+    }
+
+    public double getPathLength(int start, int end){
+        double pathLength =0;
+        Point startPoint = new Point();
+        switch (start){
+            case 0:
+                startPoint = pointStart;
+                break;
+            case 1:
+                startPoint = point1;
+                break;
+            case 2:
+                startPoint = point2 ;
+                break;
+            case 3:
+                 startPoint  = point3 ;
+                break;
+            case 4:
+                 startPoint  = point4 ;
+                break;
+            case 5:
+                 startPoint  = point5 ;
+                break;
+            case 6:
+                 startPoint  = point6 ;
+                break;
+            case 7:
+                 startPoint  = pointQR ;
+                break;
+            case 8:
+                 startPoint  = pointGoal ;
+                break;
+        }
+
+        Point lastPoint = startPoint;
+        for(Point p: allPath[start][end]){
+            pathLength += pointDistance(lastPoint, p);
+            lastPoint = p;
+        }
+
+        return pathLength;
+    }
+
+    private static double pointDistance(Point point1, Point point2){
+        double dx = point2.getX()-point1.getX();
+        double dy = point2.getY()-point1.getY();
+        double dz = point2.getZ()-point1.getZ();
+        return Math.sqrt(dx*dx + dy*dy + dz*dz);
     }
 }

@@ -11,6 +11,8 @@ import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
 
 public class Constants {
+    public final static Point pointStart = new Point(9.815d, -9.806d, 4.293d);
+
     public final static Point point1 = new Point(11.2746d, -9.92284d, 5.2988d);
     public final static Quaternion point1Quaternion = new Quaternion(0.0f, 0.0f, -0.707f, 0.707f);
 
@@ -37,33 +39,10 @@ public class Constants {
 
     public final static Point Aim1Point = new Point(11.207, -9.92284, 5.474);
     public final static Point Aim2Point = new Point(10.456, -9.192, 4.48);
-    public final static Point Aim3Point = new Point(10.711, -7.768, 4.48);
+    public final static Point Aim3Point = new Point(10.713, -7.768, 4.48);
     public final static Point Aim4Point = new Point(10.51, -6.613, 5.207);
     public final static Point Aim5Point = new Point(11.046, -7.914, 5.3393);
     public final static Point Aim6Point = new Point(11.355, -9.055, 4.946);
-
-
-    public final static Point pointKIZmin_1 = new Point(10.3d, -10.2d, 4.32d);
-    public final static Point pointKIZmax_1 = new Point(11.55d, -6.0d, 5.57d);
-
-    public final static Point pointKIZmin_2 = new Point(9.5d, -10.5d, 4.02d);
-    public final static Point pointKIZmax_2 = new Point(10.5d, -9.6d, 4.8d);
-
-
-    public final static Point pointKOZmin_1 = new Point(10.783d, -9.8899d, 4.8385d);
-    public final static Point pointKOZmax_1 = new Point(11.071d, -9.6929d, 5.0665d);
-
-    public final static Point pointKOZmin_2 = new Point(10.8652d, -9.0734d, 4.3861d);
-    public final static Point pointKOZmax_2 = new Point(10.9628d, -8.7314d, 4.6401d);
-
-    public final static Point pointKOZmin_3 = new Point(10.185d, -8.3826d, 4.1475d);
-    public final static Point pointKOZmax_3 = new Point(11.665d, -8.2826d, 4.6725d);
-
-    public final static Point pointKOZmin_4 = new Point(10.7955d, -8.0635d, 5.1055d);
-    public final static Point pointKOZmax_4 = new Point(11.3525d, -7.7305d, 5.1305d);
-
-    public final static Point pointKOZmin_5 = new Point(10.563d, -7.1449d, 4.6544d);
-    public final static Point pointKOZmax_5 = new Point(10.709d, -6.8099d, 4.8164d);
 
     public final static List<Mat> boardArucoObjPoints(){
         List<Mat> boardArucoObjPoints = new ArrayList<>();
