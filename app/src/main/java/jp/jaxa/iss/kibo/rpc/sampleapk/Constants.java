@@ -42,7 +42,7 @@ public class Constants {
     public final static Point Aim3Point = new Point(10.713, -7.768, 4.48);
     public final static Point Aim4Point = new Point(10.51, -6.613, 5.207);
     public final static Point Aim5Point = new Point(11.046, -7.914, 5.3393);
-    public final static Point Aim6Point = new Point(11.355, -8.155, 5.016);
+    public final static Point Aim6Point = new Point(11.355, -9.055, 4.946);
 
     public final static List<Mat> boardArucoObjPoints(){
         List<Mat> boardArucoObjPoints = new ArrayList<>();

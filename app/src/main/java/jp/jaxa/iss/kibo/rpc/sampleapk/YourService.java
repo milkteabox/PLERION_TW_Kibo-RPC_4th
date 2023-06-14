@@ -56,8 +56,7 @@ public class YourService extends KiboRpcService {
                 nowPoint = p;
             }
         }
-
-        followNumPath(nowPoint, 8);
+        //followNumPath(nowPoint, 8);
         missionEnd();
     }
 
@@ -435,7 +434,17 @@ public class YourService extends KiboRpcService {
         @Override
         public void run() {
             getIntrinsics();
+            while (!Thread.currentThread().isInterrupted()) {
+                decodeQRCode(getDockCamCalibrateMat());
+                decodeQRCode(getNavCamCalibrateMat());
+
+                if (QrScaned) {
+                    Log.i("QR", "QR result: "+ Qr_Data);
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
+
 
         private void decodeQRCode(Mat image){
             Size newSize = new Size(image.cols() * 2.75, image.rows() * 2.75);
