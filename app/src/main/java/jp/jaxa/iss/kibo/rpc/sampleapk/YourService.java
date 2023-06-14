@@ -38,13 +38,18 @@ public class YourService extends KiboRpcService {
     private double[][] navCamIntrinsics;
     private int nowPoint = 0;
     private String Qr_Data = "ASTROBEE";
+    private boolean QrScaned = false;
     @Override
     protected void runPlan1(){
         api.startMission();
         navCamIntrinsics = api.getNavCamIntrinsics();
 
+        Thread threadQR = new Thread(new multiThreadAirQR());
+
+        threadQR.start();
+
         for (int i =0; i<4; i++){
-            for(Integer p : getActiveTarget()){
+            for(Integer p : getShortestTarget()){
                 followNumPath(nowPoint, p);
                 api.laserControl(true);
                 api.takeTargetSnapshot(p);
@@ -121,133 +126,145 @@ public class YourService extends KiboRpcService {
         followPath(path, targetQuaternion);
     }
 
-    private List<Integer>  getActiveTarget(){
+    private List<Integer> getShortestTarget() {
         List<Integer> activeTargets = api.getActiveTargets();
+
+        if(activeTargets.size() != 1){
+            PathMap pathMap = new PathMap();
+            int t1 = activeTargets.get(0);
+            int t2 = activeTargets.get(1);
+
+            if(pathMap.getPathLength(nowPoint, t1) + pathMap.getPathLength(t1, t2)
+                    > pathMap.getPathLength(nowPoint, t2) + pathMap.getPathLength(t2, t1)){
+                activeTargets.set(0, t2);
+                activeTargets.set(1, t1);
+            }
+        }
         return activeTargets;
     }
 
-    private void aimAndHitTarget(int targetNum) {
-
-        double[] camDoubleMatrix = navCamIntrinsics[0];
-        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
-
-        Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
-
-        cameraMatrix.put(0,0, camDoubleMatrix[0]);
-        cameraMatrix.put(0,1, camDoubleMatrix[1]);
-        cameraMatrix.put(0,2, camDoubleMatrix[2]);
-        cameraMatrix.put(1,0, camDoubleMatrix[3]);
-        cameraMatrix.put(1,1, camDoubleMatrix[4]);
-        cameraMatrix.put(1,2, camDoubleMatrix[5]);
-        cameraMatrix.put(2,0, camDoubleMatrix[6]);
-        cameraMatrix.put(2,1, camDoubleMatrix[7]);
-        cameraMatrix.put(2,2, camDoubleMatrix[8]);
-
-        Mat distortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
-
-        distortionCoefficients.put(0,0, distortionCoefficientsDoubleMatrix[0]);
-        distortionCoefficients.put(0,1, distortionCoefficientsDoubleMatrix[1]);
-        distortionCoefficients.put(0,2, distortionCoefficientsDoubleMatrix[2]);
-        distortionCoefficients.put(0,3, distortionCoefficientsDoubleMatrix[3]);
-        distortionCoefficients.put(0,4, distortionCoefficientsDoubleMatrix[4]);
-
-
-        sleep(5000);
-
-        Mat originalImage = api.getMatNavCam();
-        Mat navCamMat = originalImage;
-
-        Mat arucoDrawMat = navCamMat;
-
-        List<Mat> arucoCorners = new ArrayList<>();
-        Mat arucoIDs = new Mat();
-
-        Aruco.detectMarkers(
-                navCamMat,
-                Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250),
-                arucoCorners,
-                arucoIDs
-                );
-
-        Aruco.drawDetectedMarkers(arucoDrawMat, arucoCorners, arucoIDs, new Scalar(0, 255, 0));
-
-        int startingValue = (targetNum - 1) * 4 + 1;
-        MatOfInt boardArucoIDs = new MatOfInt(startingValue, startingValue + 1, startingValue + 2, startingValue + 3);
-
-        Board targetBoard = Board.create(boardArucoObjPoints(), Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250), boardArucoIDs);
-
-        Mat rvec = new Mat();
-        Mat tvec = new Mat();
-
-        Aruco.estimatePoseBoard(arucoCorners, arucoIDs, targetBoard, cameraMatrix, distortionCoefficients, rvec, tvec);
-
-        MatOfPoint3f origin = new MatOfPoint3f(new Point3(0, 0, 0));
-
-        MatOfDouble DoubleDistortionCoefficients = new MatOfDouble();
-        distortionCoefficients.convertTo(DoubleDistortionCoefficients, CvType.CV_64F);
-
-        MatOfPoint2f arucoCenterPoints = new MatOfPoint2f();
-        Calib3d.projectPoints(origin, rvec, tvec, cameraMatrix, DoubleDistortionCoefficients, arucoCenterPoints);
-
-        Imgproc.circle(arucoDrawMat, arucoCenterPoints.toArray()[0], 1, new Scalar(255, 255, 255),2);
-
-        api.saveMatImage(arucoDrawMat, "Axis.mat");
-
-        Log.i("Axis", tvec.dump());
-
-        double arucoCenterX = arucoCenterPoints.toArray()[0].x;
-        double arucoCenterY = arucoCenterPoints.toArray()[0].y;
-
-        double tx;
-        double ty;
-
-        switch (targetNum){
-            case 1:
-                tx = tvec.get(0, 0)[0] - 10.6 ;
-                ty = -tvec.get(1, 0)[0] - 5.4 ;
-
-                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-                moveToWithRetry(new Point(point1.getX() + tx/100, point1.getY(), point1.getZ() - ty/100), point1Quaternion, 15);
-                break;
-            case 2:
-                tx = tvec.get(0, 0)[0] - 10.24 ;
-                ty = -tvec.get(1, 0)[0] - 5.1 ;
-
-                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-                moveToWithRetry(new Point(point2.getX() + tx/100, point2.getY() + ty/100, point2.getZ()), point2Quaternion, 15);
-                break;
-            case 3:
-                tx = tvec.get(0, 0)[0] - 10.5;
-                ty = -tvec.get(1, 0)[0] - 5.1;
-
-                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-                moveToWithRetry(new Point(point3.getX() - ty/100, point3.getY() + tx/100, point3.getZ()), point3Quaternion, 15);
-                break;
-            case 4:
-                tx = tvec.get(0, 0)[0] - 10.5;
-                ty = -tvec.get(1, 0)[0] - 5.1;
-
-                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-                moveToWithRetry(new Point(point4.getX(), point4.getY() - tx/100, point4.getZ() - ty/100), point4Quaternion, 15);
-                break;
-            case 5:
-                tx = tvec.get(0, 0)[0] - 10.55;
-                ty = -tvec.get(1, 0)[0] - 4.55;
-
-                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-                moveToWithRetry(new Point(point5.getX() + tx/100, point5.getY() - ty/100, point5.getZ() ), point5Quaternion, 15);
-                break;
-            case 6:
-                tx = tvec.get(0, 0)[0] - 11.2;
-                ty = -tvec.get(1, 0)[0] - 5.8;
-
-                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
-                moveToWithRetry(new Point(point6.getX(), point6.getY() + tx/100, point6.getZ() - ty/100), point6Quaternion, 15);
-                break;
-        }
-        api.laserControl(true);
-        api.takeTargetSnapshot(targetNum);
-    }
+//    private void aimAndHitTarget(int targetNum) {
+//
+//        double[] camDoubleMatrix = navCamIntrinsics[0];
+//        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
+//
+//        Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
+//
+//        cameraMatrix.put(0,0, camDoubleMatrix[0]);
+//        cameraMatrix.put(0,1, camDoubleMatrix[1]);
+//        cameraMatrix.put(0,2, camDoubleMatrix[2]);
+//        cameraMatrix.put(1,0, camDoubleMatrix[3]);
+//        cameraMatrix.put(1,1, camDoubleMatrix[4]);
+//        cameraMatrix.put(1,2, camDoubleMatrix[5]);
+//        cameraMatrix.put(2,0, camDoubleMatrix[6]);
+//        cameraMatrix.put(2,1, camDoubleMatrix[7]);
+//        cameraMatrix.put(2,2, camDoubleMatrix[8]);
+//
+//        Mat distortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
+//
+//        distortionCoefficients.put(0,0, distortionCoefficientsDoubleMatrix[0]);
+//        distortionCoefficients.put(0,1, distortionCoefficientsDoubleMatrix[1]);
+//        distortionCoefficients.put(0,2, distortionCoefficientsDoubleMatrix[2]);
+//        distortionCoefficients.put(0,3, distortionCoefficientsDoubleMatrix[3]);
+//        distortionCoefficients.put(0,4, distortionCoefficientsDoubleMatrix[4]);
+//
+//
+//        sleep(5000);
+//
+//        Mat originalImage = api.getMatNavCam();
+//        Mat navCamMat = originalImage;
+//
+//        Mat arucoDrawMat = navCamMat;
+//
+//        List<Mat> arucoCorners = new ArrayList<>();
+//        Mat arucoIDs = new Mat();
+//
+//        Aruco.detectMarkers(
+//                navCamMat,
+//                Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250),
+//                arucoCorners,
+//                arucoIDs
+//                );
+//
+//        Aruco.drawDetectedMarkers(arucoDrawMat, arucoCorners, arucoIDs, new Scalar(0, 255, 0));
+//
+//        int startingValue = (targetNum - 1) * 4 + 1;
+//        MatOfInt boardArucoIDs = new MatOfInt(startingValue, startingValue + 1, startingValue + 2, startingValue + 3);
+//
+//        Board targetBoard = Board.create(boardArucoObjPoints(), Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250), boardArucoIDs);
+//
+//        Mat rvec = new Mat();
+//        Mat tvec = new Mat();
+//
+//        Aruco.estimatePoseBoard(arucoCorners, arucoIDs, targetBoard, cameraMatrix, distortionCoefficients, rvec, tvec);
+//
+//        MatOfPoint3f origin = new MatOfPoint3f(new Point3(0, 0, 0));
+//
+//        MatOfDouble DoubleDistortionCoefficients = new MatOfDouble();
+//        distortionCoefficients.convertTo(DoubleDistortionCoefficients, CvType.CV_64F);
+//
+//        MatOfPoint2f arucoCenterPoints = new MatOfPoint2f();
+//        Calib3d.projectPoints(origin, rvec, tvec, cameraMatrix, DoubleDistortionCoefficients, arucoCenterPoints);
+//
+//        Imgproc.circle(arucoDrawMat, arucoCenterPoints.toArray()[0], 1, new Scalar(255, 255, 255),2);
+//
+//        api.saveMatImage(arucoDrawMat, "Axis.mat");
+//
+//        Log.i("Axis", tvec.dump());
+//
+//        double arucoCenterX = arucoCenterPoints.toArray()[0].x;
+//        double arucoCenterY = arucoCenterPoints.toArray()[0].y;
+//
+//        double tx;
+//        double ty;
+//
+//        switch (targetNum){
+//            case 1:
+//                tx = tvec.get(0, 0)[0] - 10.6 ;
+//                ty = -tvec.get(1, 0)[0] - 5.4 ;
+//
+//                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+//                moveToWithRetry(new Point(point1.getX() + tx/100, point1.getY(), point1.getZ() - ty/100), point1Quaternion, 15);
+//                break;
+//            case 2:
+//                tx = tvec.get(0, 0)[0] - 10.24 ;
+//                ty = -tvec.get(1, 0)[0] - 5.1 ;
+//
+//                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+//                moveToWithRetry(new Point(point2.getX() + tx/100, point2.getY() + ty/100, point2.getZ()), point2Quaternion, 15);
+//                break;
+//            case 3:
+//                tx = tvec.get(0, 0)[0] - 10.5;
+//                ty = -tvec.get(1, 0)[0] - 5.1;
+//
+//                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+//                moveToWithRetry(new Point(point3.getX() - ty/100, point3.getY() + tx/100, point3.getZ()), point3Quaternion, 15);
+//                break;
+//            case 4:
+//                tx = tvec.get(0, 0)[0] - 10.5;
+//                ty = -tvec.get(1, 0)[0] - 5.1;
+//
+//                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+//                moveToWithRetry(new Point(point4.getX(), point4.getY() - tx/100, point4.getZ() - ty/100), point4Quaternion, 15);
+//                break;
+//            case 5:
+//                tx = tvec.get(0, 0)[0] - 10.55;
+//                ty = -tvec.get(1, 0)[0] - 4.55;
+//
+//                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+//                moveToWithRetry(new Point(point5.getX() + tx/100, point5.getY() - ty/100, point5.getZ() ), point5Quaternion, 15);
+//                break;
+//            case 6:
+//                tx = tvec.get(0, 0)[0] - 11.2;
+//                ty = -tvec.get(1, 0)[0] - 5.8;
+//
+//                Log.i("Aim", "X:"+ tx + "  Y:" + ty);
+//                moveToWithRetry(new Point(point6.getX(), point6.getY() + tx/100, point6.getZ() - ty/100), point6Quaternion, 15);
+//                break;
+//        }
+//        api.laserControl(true);
+//        api.takeTargetSnapshot(targetNum);
+//    }
 
 
     private Mat getCalibratedImage() {
@@ -289,10 +306,6 @@ public class YourService extends KiboRpcService {
 
         return calibrateImaged;
     }
-
-    private void MultiQR(){
-    }
-
 
     private void scanQRCode(boolean saveImage){
         Log.i("QR", "Start ScanQr");
@@ -410,5 +423,101 @@ public class YourService extends KiboRpcService {
     public static List<Point> getPath(int start, int end){
         PathMap pathMap = new PathMap();
         return pathMap.getPath(start, end);
+    }
+
+
+    class multiThreadAirQR implements Runnable {
+        Mat navCameraMatrix = new Mat(3, 3 , CvType.CV_64F);
+        Mat navDistortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
+        Mat dockCameraMatrix = new Mat(3, 3 , CvType.CV_64F);
+        Mat dockDistortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
+
+        @Override
+        public void run() {
+            getIntrinsics();
+        }
+
+        private void decodeQRCode(Mat image){
+            Size newSize = new Size(image.cols() * 2.75, image.rows() * 2.75);
+
+            Imgproc.resize(image, image, newSize, 0, 0, Imgproc.INTER_CUBIC);
+
+            QRCodeDetector qrCodeDetector = new QRCodeDetector();
+            String data = qrCodeDetector.detectAndDecode(image);
+
+            if(data.equals("JEM") || data.equals("COLUMBUS") || data.equals("RACK1") || data.equals("ASTROBEE") || data.equals("INTBALL") || data.equals("BLANK")){
+                Qr_Data = data;
+                QrScaned = true;
+            }
+        }
+
+        private Mat getNavCamCalibrateMat(){
+            Mat originalImage = api.getMatNavCam();
+
+            Mat calibrateImaged = new Mat();
+
+            Imgproc.undistort(
+                    originalImage,
+                    calibrateImaged,
+                    navCameraMatrix,
+                    navDistortionCoefficients
+            );
+            return calibrateImaged;
+        }
+
+        private Mat getDockCamCalibrateMat(){
+            Mat originalImage = api.getMatDockCam();
+
+            Mat calibrateImaged = new Mat();
+
+            Imgproc.undistort(
+                    originalImage,
+                    calibrateImaged,
+                    dockCameraMatrix,
+                    dockDistortionCoefficients
+            );
+            return calibrateImaged;
+        }
+
+        private void getIntrinsics(){
+            double[] navCamDoubleMatrix = api.getNavCamIntrinsics()[0];
+            double[] navDistortionCoefficientsDoubleMatrix = api.getNavCamIntrinsics()[1];
+
+            navCameraMatrix.put(0,0, navCamDoubleMatrix[0]);
+            navCameraMatrix.put(0,1, navCamDoubleMatrix[1]);
+            navCameraMatrix.put(0,2, navCamDoubleMatrix[2]);
+            navCameraMatrix.put(1,0, navCamDoubleMatrix[3]);
+            navCameraMatrix.put(1,1, navCamDoubleMatrix[4]);
+            navCameraMatrix.put(1,2, navCamDoubleMatrix[5]);
+            navCameraMatrix.put(2,0, navCamDoubleMatrix[6]);
+            navCameraMatrix.put(2,1, navCamDoubleMatrix[7]);
+            navCameraMatrix.put(2,2, navCamDoubleMatrix[8]);
+
+            navDistortionCoefficients.put(0,0, navDistortionCoefficientsDoubleMatrix[0]);
+            navDistortionCoefficients.put(0,1, navDistortionCoefficientsDoubleMatrix[1]);
+            navDistortionCoefficients.put(0,2, navDistortionCoefficientsDoubleMatrix[2]);
+            navDistortionCoefficients.put(0,3, navDistortionCoefficientsDoubleMatrix[3]);
+            navDistortionCoefficients.put(0,4, navDistortionCoefficientsDoubleMatrix[4]);
+
+            double[] dockCamDoubleMatrix = api.getDockCamIntrinsics()[0];
+            double[] dockDistortionCoefficientsDoubleMatrix = api.getDockCamIntrinsics()[1];
+
+            dockCameraMatrix.put(0,0, dockCamDoubleMatrix[0]);
+            dockCameraMatrix.put(0,1, dockCamDoubleMatrix[1]);
+            dockCameraMatrix.put(0,2, dockCamDoubleMatrix[2]);
+            dockCameraMatrix.put(1,0, dockCamDoubleMatrix[3]);
+            dockCameraMatrix.put(1,1, dockCamDoubleMatrix[4]);
+            dockCameraMatrix.put(1,2, dockCamDoubleMatrix[5]);
+            dockCameraMatrix.put(2,0, dockCamDoubleMatrix[6]);
+            dockCameraMatrix.put(2,1, dockCamDoubleMatrix[7]);
+            dockCameraMatrix.put(2,2, dockCamDoubleMatrix[8]);
+
+            dockDistortionCoefficients.put(0,0, dockDistortionCoefficientsDoubleMatrix[0]);
+            dockDistortionCoefficients.put(0,1, dockDistortionCoefficientsDoubleMatrix[1]);
+            dockDistortionCoefficients.put(0,2, dockDistortionCoefficientsDoubleMatrix[2]);
+            dockDistortionCoefficients.put(0,3, dockDistortionCoefficientsDoubleMatrix[3]);
+            dockDistortionCoefficients.put(0,4, dockDistortionCoefficientsDoubleMatrix[4]);
+        }
+
     }
 }
