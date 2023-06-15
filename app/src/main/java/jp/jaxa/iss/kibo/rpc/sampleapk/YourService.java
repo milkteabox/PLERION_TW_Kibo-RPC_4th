@@ -48,15 +48,9 @@ public class YourService extends KiboRpcService {
 
         threadQR.start();
 
-        for (int i =0; i<4; i++){
-            for(Integer p : getShortestTarget()){
-                followNumPath(nowPoint, p);
-                api.laserControl(true);
-                api.takeTargetSnapshot(p);
-                nowPoint = p;
-            }
-        }
-        //followNumPath(nowPoint, 8);
+        moveAndHit();
+
+        followNumPath(nowPoint, 8);
         missionEnd();
     }
 
@@ -78,9 +72,9 @@ public class YourService extends KiboRpcService {
     private void followPath (List<Point> path, Quaternion quaternion){
         for(Point p : path) {
             Point currentPOS = api.getRobotKinematics().getPosition();
-            while (Math.abs(currentPOS.getX() - p.getX()) > 0.1535||
-                    Math.abs(currentPOS.getY() - p.getY()) > 0.1535||
-                    Math.abs(currentPOS.getZ() - p.getZ()) > 0.1535) {
+            while (Math.abs(currentPOS.getX() - p.getX()) > 0.3535||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.3535||
+                    Math.abs(currentPOS.getZ() - p.getZ()) > 0.3535) {
                 api.moveTo(p, quaternion, false);
                 currentPOS = api.getRobotKinematics().getPosition();
             }
@@ -141,6 +135,19 @@ public class YourService extends KiboRpcService {
         }
         return activeTargets;
     }
+
+    private void moveAndHit (){
+        for (int i =0; i<4; i++){
+            for(Integer p : getShortestTarget()){
+                if(api.getTimeRemaining().get(1) < 120000) { return; }
+                    followNumPath(nowPoint, p);
+                    api.laserControl(true);
+                    api.takeTargetSnapshot(p);
+                    nowPoint = p;
+            }
+        }
+    }
+
 
 //    private void aimAndHitTarget(int targetNum) {
 //
@@ -264,7 +271,6 @@ public class YourService extends KiboRpcService {
 //        api.laserControl(true);
 //        api.takeTargetSnapshot(targetNum);
 //    }
-
 
     private Mat getCalibratedImage() {
         Mat originalImage = api.getMatNavCam();

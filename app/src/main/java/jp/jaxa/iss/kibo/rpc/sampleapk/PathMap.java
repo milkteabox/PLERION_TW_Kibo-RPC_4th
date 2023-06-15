@@ -56,7 +56,7 @@ public class PathMap {
         allPath[1][7].add(0, new Point(11.19,-9.5,5.2988));
         allPath[1][7].add(1, pointQR);
 
-        allPath[1][8].add(0, new Point(11.19,-9.5,5.2988));
+        allPath[1][8].add(0, new Point(11.143,-7.35,5.474));
         allPath[1][8].add(1, pointGoal);
 
 

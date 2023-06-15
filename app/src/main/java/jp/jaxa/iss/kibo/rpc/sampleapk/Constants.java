@@ -34,7 +34,7 @@ public class Constants {
     public final static Point pointQR = new Point(11.369d, -8.5518d, 4.48d);
     public final static Quaternion pointQRQuaternion = new Quaternion(0.0f, 0.707f, 0.0f, 0.707f);
 
-    public final static Point pointGoal = new Point(11.381944d, -8.566172d, 4.48d);
+    public final static Point pointGoal = new Point(11.143d, -6.7607d, 4.9654);
     public final static Quaternion pointGoalQuaternion = new Quaternion(0.0f, 0.0f, -0.707f, 0.707f);
 
     public final static Point Aim1Point = new Point(11.207, -9.92284, 5.474);
