@@ -50,7 +50,10 @@ public class YourService extends KiboRpcService {
 
         moveAndHit();
 
+        long startTime = getMissionRemainingTime();
+        Log.i("moveTimeCost", nowPoint + "->" + 8 + "  START");
         followNumPath(nowPoint, 8);
+        Log.i("moveTimeCost", nowPoint + "->" + 8 + "  ARRIVE and HIT DOWN" + "  Time:  " + (startTime - getMissionRemainingTime()) );
         missionEnd();
     }
 
@@ -137,14 +140,15 @@ public class YourService extends KiboRpcService {
     }
 
     private void moveAndHit (){
-        for (int i =0; i<4; i++){
+        for (int i =0; i<6; i++){
             for(Integer p : getShortestTarget()){
                 if(getMissionRemainingTime() < 120000) { return; }
-                Log.i("moveTimeRC", nowPoint + "->" + p + "  START");
+                long startTime = getMissionRemainingTime();
+                Log.i("moveTimeCost", nowPoint + "->" + p + "  START");
                 followNumPath(nowPoint, p);
                 api.laserControl(true);
                 api.takeTargetSnapshot(p);
-                Log.i("moveTimeRC", nowPoint + "->" + p + "  ARRIVE and HIT DOWN");
+                Log.i("moveTimeCost", nowPoint + "->" + p + "  ARRIVE and HIT DOWN" + "  Time:  " + (startTime - getMissionRemainingTime()) );
                 nowPoint = p;
             }
         }
@@ -263,36 +267,6 @@ public class YourService extends KiboRpcService {
         }
         api.reportMissionCompletion(reportString);
     }
-    private List<PointData> getActiveTargetPointList(){
-        List<Integer> targets = api.getActiveTargets();
-        List<PointData> points = new ArrayList<>();
-        for(int t : targets){
-            switch (t){
-                case 1:
-                    points.add(new PointData(point1, point1Quaternion));
-                    break;
-                case 2:
-                    points.add(new PointData(point2, point2Quaternion));
-                    break;
-                case 3:
-                    points.add(new PointData(point3, point3Quaternion));
-                    break;
-                case 4:
-                    points.add(new PointData(point4, point4Quaternion));
-                    break;
-                case 5:
-                    points.add(new PointData(point5, point5Quaternion));
-                    break;
-                case 6:
-                    points.add(new PointData(point6, point6Quaternion));
-                    break;
-                case 7:
-                    points.add(new PointData(pointQR, pointQRQuaternion));
-                    break;
-            }
-        }
-        return points;
-    }
 
     private boolean moveToWithRetry(Point point, Quaternion quaternion, int loopMAX_time) {
         Result result;
@@ -348,7 +322,7 @@ public class YourService extends KiboRpcService {
 
 
         private void decodeQRCode(Mat image){
-            Size newSize = new Size(image.cols() * 2.75, image.rows() * 2.75);
+            Size newSize = new Size(image.cols() * 3.25, image.rows() * 3.25);
 
             Imgproc.resize(image, image, newSize, 0, 0, Imgproc.INTER_CUBIC);
 

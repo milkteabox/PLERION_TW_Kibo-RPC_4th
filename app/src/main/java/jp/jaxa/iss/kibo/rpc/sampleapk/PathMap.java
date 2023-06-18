@@ -9,8 +9,37 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.Constants.*;
 
 public class PathMap {
     private List<Point>[][] allPath = new List[8][9];
+    private Long[][] allPathTime = new Long[8][9];
 
     public PathMap() {
+        setPathMap();
+        setPathtime();
+    }
+
+    private void setPathtime(){
+        allPathTime[1][2] = 44500l;
+        allPathTime[1][3] = 66500l;
+        allPathTime[1][4] = 76500l;
+        allPathTime[1][5] = 35500l;
+        allPathTime[1][6] = 36500l;
+        allPathTime[1][8] = 62500l;
+
+        allPathTime[2][1] = 50000l;
+        allPathTime[2][3] = 62500l;
+        allPathTime[2][4] = 73500l;
+        allPathTime[2][5] = 65500l;
+        allPathTime[2][6] = 57500l;
+        allPathTime[2][8] = 82500l;
+
+        allPathTime[3][1] = 50000l;
+        allPathTime[3][2] = 62500l;
+        allPathTime[3][4] = 73500l;
+        allPathTime[3][5] = 65500l;
+        allPathTime[3][6] = 57500l;
+        allPathTime[3][8] = 82500l;
+    }
+
+    private void setPathMap() {
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 9; j++) {
                 allPath[i][j] = new ArrayList<>();
