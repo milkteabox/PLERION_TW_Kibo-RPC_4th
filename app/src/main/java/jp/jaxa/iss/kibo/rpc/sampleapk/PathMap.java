@@ -126,8 +126,8 @@ public class PathMap {
         allPath[2][5].add(1, new Point(10.61,-8.25,5.33));
         allPath[2][5].add(2, Aim5Point);
 
-        allPath[2][6].add(0, new Point(10.61,-8.9929,4.85));
-        allPath[2][6].add(1, new Point(11.355,-8.9929,4.85));
+        allPath[2][6].add(0, new Point(10.61,-8.9929,4.95));
+        allPath[2][6].add(1, new Point(11.355,-8.9929,4.95));
         allPath[2][6].add(2, Aim6Point);
 
         allPath[2][7].add(0, new Point(10.61,-8.5518,4.85));

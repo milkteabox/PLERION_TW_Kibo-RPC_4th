@@ -1,26 +1,13 @@
 package jp.jaxa.iss.kibo.rpc.sampleapk;
 
-import android.graphics.Bitmap;
 import android.util.Log;
-import android.widget.Switch;
 
-import org.opencv.android.Utils;
-import org.opencv.aruco.Aruco;
-import org.opencv.aruco.Board;
-import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfDouble;
-import org.opencv.core.MatOfInt;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.MatOfPoint3f;
-import org.opencv.core.Point3;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import gov.nasa.arc.astrobee.Result;
@@ -52,7 +39,8 @@ public class YourService extends KiboRpcService {
 
         long startTime = getMissionRemainingTime();
         Log.i("moveTimeCost", nowPoint + "->" + 8 + "  START");
-        followNumPath(nowPoint, 8);
+//      followNumPath(nowPoint, 8);
+        goToEnd();
         Log.i("moveTimeCost", nowPoint + "->" + 8 + "  ARRIVE and HIT DOWN" + "  Time:  " + (startTime - getMissionRemainingTime()) );
         missionEnd();
     }
@@ -139,10 +127,32 @@ public class YourService extends KiboRpcService {
         return activeTargets;
     }
 
+    private void goToEnd() {
+        Quaternion moveQuaternion = pointGoalQuaternion;
+        if(!QrScaned){moveQuaternion = new Quaternion(0.5f, 0.5f, -0.5f, 0.5f); }
+
+        for(Point p : getPath(nowPoint, 8)) {
+            Point currentPOS = api.getRobotKinematics().getPosition();
+            while (Math.abs(currentPOS.getX() - p.getX()) > 0.3535||
+                    Math.abs(currentPOS.getY() - p.getY()) > 0.3535||
+                    Math.abs(currentPOS.getZ() - p.getZ()) > 0.3535) {
+                api.moveTo(p, moveQuaternion, false);
+                currentPOS = api.getRobotKinematics().getPosition();
+            }
+        }
+
+        moveToWithRetry(pointGoal, pointGoalQuaternion, 15);
+    }
+
     private void moveAndHit (){
         for (int i = 0; i<6; i++){
+            boolean secondTimeSkip = false;
             for(Integer p : getShortestTarget()){
-                if(!isTimeAllow(nowPoint, p)) { return;}
+                if(!isTimeAllow(nowPoint, p)) {
+                    if(secondTimeSkip){ return;}
+                    secondTimeSkip = true;
+                    break;
+                }
                 long startTime = getMissionRemainingTime();
                 Log.i("moveTimeCost", nowPoint + "->" + p + "  START");
                 followNumPath(nowPoint, p);
