@@ -140,9 +140,9 @@ public class YourService extends KiboRpcService {
     }
 
     private void moveAndHit (){
-        for (int i =0; i<6; i++){
+        for (int i = 0; i<6; i++){
             for(Integer p : getShortestTarget()){
-                if(getMissionRemainingTime() < 120000) { return; }
+                if(!isTimeAllow(nowPoint, p)) { return;}
                 long startTime = getMissionRemainingTime();
                 Log.i("moveTimeCost", nowPoint + "->" + p + "  START");
                 followNumPath(nowPoint, p);
@@ -294,11 +294,21 @@ public class YourService extends KiboRpcService {
         return Math.sqrt(dx*dx + dy*dy + dz*dz);
     }
 
-    public static List<Point> getPath(int start, int end){
+    private static List<Point> getPath(int start, int end){
         PathMap pathMap = new PathMap();
         return pathMap.getPath(start, end);
     }
 
+    private boolean isTimeAllow(int nowPoint, int target){
+        PathMap pathMap = new PathMap();
+
+        if (nowPoint == 0){return true;}
+
+        if((getMissionRemainingTime() - 4750) < (pathMap.getPathTime(nowPoint, target) + pathMap.getPathTime(target, 8))){
+            return false;
+        }
+        return true;
+    }
 
     class multiThreadAirQR implements Runnable {
         Mat navCameraMatrix = new Mat(3, 3 , CvType.CV_64F);

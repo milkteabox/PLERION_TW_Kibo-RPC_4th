@@ -17,26 +17,47 @@ public class PathMap {
     }
 
     private void setPathtime(){
-        allPathTime[1][2] = 44500l;
-        allPathTime[1][3] = 66500l;
-        allPathTime[1][4] = 76500l;
-        allPathTime[1][5] = 35500l;
-        allPathTime[1][6] = 36500l;
-        allPathTime[1][8] = 62500l;
+        allPathTime[1][2] = 43776L;
+        allPathTime[1][3] = 65600L;
+        allPathTime[1][4] = 75888L;
+        allPathTime[1][5] = 34312L;
+        allPathTime[1][6] = 35920L;
+        allPathTime[1][8] = 55648L;
 
-        allPathTime[2][1] = 50000l;
-        allPathTime[2][3] = 62500l;
-        allPathTime[2][4] = 73500l;
-        allPathTime[2][5] = 65500l;
-        allPathTime[2][6] = 57500l;
-        allPathTime[2][8] = 82500l;
+        allPathTime[2][1] = 41816L;
+        allPathTime[2][3] = 53608L;
+        allPathTime[2][4] = 64256L;
+        allPathTime[2][5] = 57232L;
+        allPathTime[2][6] = 45992L;
+        allPathTime[2][8] = 76096L;
 
-        allPathTime[3][1] = 50000l;
-        allPathTime[3][2] = 62500l;
-        allPathTime[3][4] = 73500l;
-        allPathTime[3][5] = 65500l;
-        allPathTime[3][6] = 57500l;
-        allPathTime[3][8] = 82500l;
+        allPathTime[3][1] = 54960L;
+        allPathTime[3][2] = 53672L;
+        allPathTime[3][4] = 43008L;
+        allPathTime[3][5] = 45072L;
+        allPathTime[3][6] = 48312L;
+        allPathTime[3][8] = 24552L;
+
+        allPathTime[4][1] = 76040L;
+        allPathTime[4][2] = 66168L;
+        allPathTime[4][3] = 44016L;
+        allPathTime[4][5] = 40280L;
+        allPathTime[4][6] = 66760L;
+        allPathTime[4][8] = 27304L;
+
+        allPathTime[5][1] = 45192L;
+        allPathTime[5][2] = 67616L;
+        allPathTime[5][3] = 54448L;
+        allPathTime[5][4] = 29368L;
+        allPathTime[5][6] = 50480L;
+        allPathTime[5][8] = 35128L;
+
+        allPathTime[6][1] = 35824L;
+        allPathTime[6][2] = 52976L;
+        allPathTime[6][3] = 56520L;
+        allPathTime[6][4] = 69024L;
+        allPathTime[6][5] = 39704L;
+        allPathTime[6][8] = 58504L;
     }
 
     private void setPathMap() {
@@ -119,8 +140,8 @@ public class PathMap {
         allPath[2][8].add(3, pointGoal);
 
 
-        allPath[3][1].add(0, new Point(10.71,-7.7,4.9));
-        allPath[3][1].add(1, new Point(10.96,-8.5,-5.2988));
+        allPath[3][1].add(0, new Point(10.55,-7.7,4.48));
+        allPath[3][1].add(1, new Point(10.55,-8,5.2988));
         allPath[3][1].add(2, Aim1Point);
 
         allPath[3][2].add(0, new Point(10.61,-8.1,4.85));
@@ -247,6 +268,10 @@ public class PathMap {
 
     public List<Point> getPath(int start, int end){
         return allPath[start][end];
+    }
+
+    public Long getPathTime(int start, int end){
+        return allPathTime[start][end];
     }
 
     public double getPathLength(int start, int end){
