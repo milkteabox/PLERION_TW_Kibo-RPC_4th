@@ -32,16 +32,11 @@ public class YourService extends KiboRpcService {
         navCamIntrinsics = api.getNavCamIntrinsics();
 
         Thread threadQR = new Thread(new multiThreadAirQR());
-
         threadQR.start();
 
         moveAndHit();
 
-        long startTime = getMissionRemainingTime();
-        Log.i("moveTimeCost", nowPoint + "->" + 8 + "  START");
-//      followNumPath(nowPoint, 8);
         goToEnd();
-        Log.i("moveTimeCost", nowPoint + "->" + 8 + "  ARRIVE and HIT DOWN" + "  Time:  " + (startTime - getMissionRemainingTime()) );
         missionEnd();
     }
 
@@ -314,7 +309,7 @@ public class YourService extends KiboRpcService {
 
         if (nowPoint == 0){return true;}
 
-        if((getMissionRemainingTime() - 4750) < (pathMap.getPathTime(nowPoint, target) + pathMap.getPathTime(target, 8))){
+        if((getMissionRemainingTime() - 6750) < (pathMap.getPathTime(nowPoint, target) + pathMap.getPathTime(target, 8))){
             return false;
         }
         return true;
