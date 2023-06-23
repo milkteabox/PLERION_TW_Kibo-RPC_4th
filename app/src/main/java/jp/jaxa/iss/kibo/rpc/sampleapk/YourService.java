@@ -309,7 +309,7 @@ public class YourService extends KiboRpcService {
 
         if (nowPoint == 0){return true;}
 
-        if((getMissionRemainingTime() - 6750) < (pathMap.getPathTime(nowPoint, target) + pathMap.getPathTime(target, 8))){
+        if((getMissionRemainingTime() - 10000) < (pathMap.getPathTime(nowPoint, target) + pathMap.getPathTime(target, 8))){
             return false;
         }
         return true;
