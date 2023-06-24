@@ -36,7 +36,9 @@ public class YourService extends KiboRpcService {
 
         moveAndHit();
 
+        Long nowTime = getMissionRemainingTime();
         goToEnd();
+        Log.i("moveTimeCost", nowPoint + "->" + 8 + "  ARRIVE and HIT DOWN" + "  Time:  " + (nowTime - getMissionRemainingTime()) );
         missionEnd();
     }
 
@@ -310,7 +312,7 @@ public class YourService extends KiboRpcService {
 
         if (nowPoint == 0){return true;}
 
-        if((getMissionRemainingTime() - 11000) < (pathMap.getPathTime(nowPoint, target) + pathMap.getPathTime(target, 8))){
+        if((getMissionRemainingTime() - 15735) < (pathMap.getPathTime(nowPoint, target) + pathMap.getPathTime(target, 8))){
             return false;
         }
         return true;
