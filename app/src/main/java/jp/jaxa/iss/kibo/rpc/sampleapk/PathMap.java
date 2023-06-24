@@ -49,7 +49,7 @@ public class PathMap {
         allPathTime[5][2] = 67616L;
         allPathTime[5][3] = 54448L;
         allPathTime[5][4] = 29368L;
-        allPathTime[5][6] = 50480L;
+        allPathTime[5][6] = 40912L;
         allPathTime[5][8] = 35128L;
 
         allPathTime[6][1] = 35824L;
@@ -206,9 +206,8 @@ public class PathMap {
 
         allPath[5][4].add(0, Aim4Point);
 
-        allPath[5][6].add(0, new Point(11.15,-8.3,5.3393));
-        allPath[5][6].add(1, new Point(11.3,-8.5,4.9));
-        allPath[5][6].add(2, Aim6Point);
+        allPath[5][6].add(0, new Point(11.355,-8.9929,5.3393));
+        allPath[5][6].add(1, Aim6Point);
 
         allPath[5][7].add(0, new Point(11.15,-8.3,5.3393));
         allPath[5][7].add(1, new Point(11.369,-8.5518,4.9));
