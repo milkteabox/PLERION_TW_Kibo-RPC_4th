@@ -125,6 +125,7 @@ public class YourService extends KiboRpcService {
     private void goToEnd() {
         Quaternion moveQuaternion = pointGoalQuaternion;
         if(!QrScaned){moveQuaternion = new Quaternion(0.5f, 0.5f, -0.5f, 0.5f); }
+        api.relativeMoveTo(new Point(0, 0, 0), moveQuaternion, false);
 
         for(Point p : getPath(nowPoint, 8)) {
             Point currentPOS = api.getRobotKinematics().getPosition();
