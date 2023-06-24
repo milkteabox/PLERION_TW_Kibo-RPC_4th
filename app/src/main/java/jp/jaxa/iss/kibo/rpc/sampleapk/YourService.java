@@ -22,14 +22,12 @@ import static jp.jaxa.iss.kibo.rpc.sampleapk.Constants.*;
  */
 
 public class YourService extends KiboRpcService {
-    private double[][] navCamIntrinsics;
     private int nowPoint = 0;
     private String Qr_Data = "ASTROBEE";
     private boolean QrScaned = false;
     @Override
     protected void runPlan1(){
         api.startMission();
-        navCamIntrinsics = api.getNavCamIntrinsics();
 
         Thread threadQR = new Thread(new multiThreadAirQR());
         threadQR.start();
@@ -125,8 +123,10 @@ public class YourService extends KiboRpcService {
     }
 
     private void goToEnd() {
+        PathMap pathMap = new PathMap();
+
         Quaternion moveQuaternion = pointGoalQuaternion;
-        if(!QrScaned){moveQuaternion = new Quaternion(0.5f, 0.5f, -0.5f, 0.5f); }
+        if(!QrScaned && getMissionRemainingTime() > pathMap.getPathTime(nowPoint, 8) + 2500){moveQuaternion = new Quaternion(0.5f, 0.5f, -0.5f, 0.5f); }
         api.relativeMoveTo(new Point(0, 0, 0), moveQuaternion, false);
 
         for(Point p : getPath(nowPoint, 8)) {
@@ -177,68 +177,6 @@ public class YourService extends KiboRpcService {
         }
 
         return missionRemainingTime;
-    }
-
-    private Mat getCalibratedImage() {
-        Mat originalImage = api.getMatNavCam();
-
-        double[] camDoubleMatrix = navCamIntrinsics[0];
-        double[] distortionCoefficientsDoubleMatrix = navCamIntrinsics[1];
-
-        Mat cameraMatrix = new Mat(3, 3 , CvType.CV_64F);
-
-        cameraMatrix.put(0,0, camDoubleMatrix[0]);
-        cameraMatrix.put(0,1, camDoubleMatrix[1]);
-        cameraMatrix.put(0,2, camDoubleMatrix[2]);
-        cameraMatrix.put(1,0, camDoubleMatrix[3]);
-        cameraMatrix.put(1,1, camDoubleMatrix[4]);
-        cameraMatrix.put(1,2, camDoubleMatrix[5]);
-        cameraMatrix.put(2,0, camDoubleMatrix[6]);
-        cameraMatrix.put(2,1, camDoubleMatrix[7]);
-        cameraMatrix.put(2,2, camDoubleMatrix[8]);
-
-        Mat distortionCoefficients = new Mat(1 , 5 , CvType.CV_64F);
-
-        distortionCoefficients.put(0,0, distortionCoefficientsDoubleMatrix[0]);
-        distortionCoefficients.put(0,1, distortionCoefficientsDoubleMatrix[1]);
-        distortionCoefficients.put(0,2, distortionCoefficientsDoubleMatrix[2]);
-        distortionCoefficients.put(0,3, distortionCoefficientsDoubleMatrix[3]);
-        distortionCoefficients.put(0,4, distortionCoefficientsDoubleMatrix[4]);
-
-
-        Mat calibrateImaged = new Mat();
-
-
-        Imgproc.undistort(
-                originalImage,
-                calibrateImaged,
-                cameraMatrix,
-                distortionCoefficients
-        );
-
-        return calibrateImaged;
-    }
-
-    private void scanQRCode(boolean saveImage){
-        Log.i("QR", "Start ScanQr");
-        Log.i("QR", api.getRobotKinematics().getPosition().toString());
-        api.flashlightControlBack(0.05f);
-        sleep(5000);
-        Mat QRimage_Mat = getCalibratedImage();
-        api.flashlightControlBack(0.0f);
-
-        Mat QRimage_resizeMat = getCalibratedImage();
-        Size newSize = new Size(QRimage_Mat.cols() * 2.75, QRimage_Mat.rows() * 2.75);
-
-        Imgproc.resize(QRimage_Mat, QRimage_resizeMat, newSize, 0, 0, Imgproc.INTER_CUBIC);
-
-        QRCodeDetector qrCodeDetector = new QRCodeDetector();
-        Qr_Data = qrCodeDetector.detectAndDecode(QRimage_resizeMat);
-
-        Log.i("QR", "QR result: "+ Qr_Data);
-
-        if(saveImage){ api.saveMatImage(QRimage_Mat, "QRcode_Image.mat"); }
-
     }
 
     private void sleep(long millis){
@@ -293,13 +231,6 @@ public class YourService extends KiboRpcService {
             ++loopCounter;
         }
         return result.hasSucceeded();
-    }
-
-    private static double pointDistance(Point point1, Point point2){
-        double dx = point2.getX()-point1.getX();
-        double dy = point2.getY()-point1.getY();
-        double dz = point2.getZ()-point1.getZ();
-        return Math.sqrt(dx*dx + dy*dy + dz*dz);
     }
 
     private static List<Point> getPath(int start, int end){
